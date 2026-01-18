@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ordesignerObjectsDiagram dslVersion="1.0.0.0" absoluteBounds="0, 0, 11, 22.75" name="DBAdmin">
+  <DataContextMoniker Name="/DBAdminDataContext" />
+  <nestedChildShapes>
+    <classShape Id="9328976f-6978-41e7-a2f4-e71ffe776509" absoluteBounds="6.5, 3.25, 2, 2.5401025390624996">
+      <DataClassMoniker Name="/DBAdminDataContext/TempConnectionUpdate" />
+      <nestedChildShapes>
+        <elementListCompartment Id="865dd1e5-12cc-42ca-9e76-101677014171" absoluteBounds="6.5150000000000006, 3.71, 1.9700000000000002, 1.9801025390625" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="00d083a9-9576-4f51-8954-9894ad2f96e7" absoluteBounds="3.75, 1.375, 2, 2.3478011067708335">
+      <DataClassMoniker Name="/DBAdminDataContext/TempQualUpdate" />
+      <nestedChildShapes>
+        <elementListCompartment Id="3238529c-a10e-4ea9-829e-78d9bb27145c" absoluteBounds="3.7649999999999997, 1.835, 1.9700000000000002, 1.7878011067708333" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="79fe7671-d421-4a42-8ac7-cb337319ad1d" absoluteBounds="1, 0.625, 2, 3.8862125651041666">
+      <DataClassMoniker Name="/DBAdminDataContext/TempQualHistoryUpdate" />
+      <nestedChildShapes>
+        <elementListCompartment Id="f41467da-13cd-412b-be7d-596bfb4abd0e" absoluteBounds="1.0150000000000001, 1.085, 1.9700000000000002, 3.3262125651041665" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="07916b23-b6f8-435c-92e1-3c74c58797e7" absoluteBounds="1.625, 10.875, 2, 11.578269856770834">
+      <DataClassMoniker Name="/DBAdminDataContext/TempContactUpdate" />
+      <nestedChildShapes>
+        <elementListCompartment Id="227fc719-9f4f-4ad3-90ae-8661d169bd2a" absoluteBounds="1.6400000000000001, 11.335, 1.9700000000000002, 11.018269856770832" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+    <classShape Id="29ffdaaa-cf90-4ce0-bde6-af87ebfecae2" absoluteBounds="4.25, 8.375, 2, 8.50144694010417">
+      <DataClassMoniker Name="/DBAdminDataContext/TempOrgUpdatesForDyn" />
+      <nestedChildShapes>
+        <elementListCompartment Id="4f05724b-d6ad-4638-8014-d1dbcd4a1c98" absoluteBounds="4.265, 8.835, 1.9700000000000002, 7.9414469401041661" name="DataPropertiesCompartment" titleTextColor="Black" itemTextColor="Black" />
+      </nestedChildShapes>
+    </classShape>
+  </nestedChildShapes>
+</ordesignerObjectsDiagram>

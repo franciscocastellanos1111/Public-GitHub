@@ -1,0 +1,503 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="DBAdmin" Class="DBAdminDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=pdrptdb2k14.prod.compumentor.org;Initial Catalog=DBAdmin;Integrated Security=True;Encrypt=False" SettingsObjectName="DynamicsProcesses.Properties.Settings" SettingsPropertyName="DBAdminConnectionString2" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.TempConnectionUpdates" Member="TempConnectionUpdates">
+    <Type Name="TempConnectionUpdate">
+      <Column Name="iOwnerID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iContactID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="conttypeTo" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="conttypeFrom" Type="System.String" DbType="NVarChar(30) NOT NULL" CanBeNull="false" />
+      <Column Name="contactToEntity" Type="System.String" DbType="VarChar(7) NOT NULL" CanBeNull="false" />
+      <Column Name="tiRecordStatus" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.TempQualUpdates" Member="TempQualUpdates">
+    <Type Name="TempQualUpdate">
+      <Column Name="iOwnerId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iCampaignId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="qualCode" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="campaignStatus" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="latestAction" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="qualStatusDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="QualStatusCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="QualStatus" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.TempQualHistoryUpdates" Member="TempQualHistoryUpdates">
+    <Type Name="TempQualHistoryUpdate">
+      <Column Name="iOwnerId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="qualCode" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="campaignStatus" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="latestAction" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="qualStatusDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="iSiteId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCampaignId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iActionId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="dtActionDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="chInsertBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="tiRecordStatus" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="tsTimestamp" Type="System.Data.Linq.Binary" DbType="Binary(8)" CanBeNull="true" UpdateCheck="Never" />
+      <Column Name="CCA_primaryID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="QualStatusCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="QualStatus" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.TempContactUpdates" Member="TempContactUpdates">
+    <Type Name="TempContactUpdate">
+      <Column Name="iIndividualId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iSiteId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="chLanguageCode" Type="System.String" DbType="NChar(4) NOT NULL" CanBeNull="false" />
+      <Column Name="vchAssignedId" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchSalutation" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchFirstName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchMiddleName" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchLastName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchSuffix" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchAddress1" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchAddress2" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchAddress3" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchCity" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chRegionCode" Type="System.String" DbType="NChar(4) NOT NULL" CanBeNull="false" />
+      <Column Name="chCountryCode" Type="System.String" DbType="NChar(4) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPostCode" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPhoneNumber" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchEmailAddress" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchURL" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chGender" Type="System.Char" DbType="NChar(1)" CanBeNull="true" />
+      <Column Name="iUserTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iUserSubTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCompanyId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="vchCompanyName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chTitleCode" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="vchTitleDesc" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chDepartmentCode" Type="System.String" DbType="NChar(10)" CanBeNull="true" />
+      <Column Name="vchDepartmentDesc" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="iPhoneTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iAddressTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iSourceId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iStatusId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="bValidAddress" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="iAccessCode" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="bPrivate" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="vchUser1" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser2" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser3" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser4" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser5" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser6" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser7" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser8" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser9" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser10" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="chInsertBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="chUpdateBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="tiRecordStatus" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+      <Column Name="customerType" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="emailValidationStatus" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="ctpVerificationCode" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="dynCountryValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="dynStateProvValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.TempOrgUpdatesForDyn" Member="TempOrgUpdatesForDyns">
+    <Type Name="TempOrgUpdatesForDyn">
+      <Column Name="iCompanyId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="pngoCode" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="pngoId" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="pngoName" Type="System.String" DbType="NVarChar(200) NOT NULL" CanBeNull="false" />
+      <Column Name="ppOrgId" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="dynCustomerTypeCode" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="customerType" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="orgSourceId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="orgDesignation" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="countryCode" Type="System.String" DbType="NVarChar(4)" CanBeNull="true" />
+      <Column Name="regionCode" Type="System.String" DbType="NVarChar(4)" CanBeNull="true" />
+      <Column Name="iStatusId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="address1" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="address2" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchAssignedId" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchCity" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchCompanyName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchEmailAddress" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPhoneNumber" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPostCode" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchTaxId" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchURL" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="Budget" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="isEmailValidCode" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="associationCode" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="activityCode" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+      <Column Name="duplicateOfBIT" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="CiscoPartnerFundingCode" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="CiscoPartnerProgamCode" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="CiscoGeographicRegion" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="legalName" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="qualStatusDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="QualStatusCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="QualStatus" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="dynCountryValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="dynStateProvValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCampaignId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Function Name="dbo.usp_getConnectionUpdates" Method="usp_getConnectionUpdates">
+    <Parameter Name="fromdate" Type="System.DateTime" DbType="DateTime" />
+    <Parameter Name="todate" Type="System.DateTime" DbType="DateTime" />
+    <Return Type="System.Int32" />
+  </Function>
+  <Function Name="dbo.usp_getOrgConnections" Method="usp_getOrgConnections">
+    <Parameter Name="TSOrgId" Parameter="tSOrgId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getOrgConnectionsResult">
+      <Column Name="iOwnerID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iContactID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="conttypeTo" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="conttypeFrom" Type="System.String" DbType="NVarChar(30) NOT NULL" CanBeNull="false" />
+      <Column Name="contactToEntity" Type="System.String" DbType="VarChar(7) NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getQualUpdates" Method="usp_getQualUpdates">
+    <Parameter Name="fromdate" Type="System.DateTime" DbType="DateTime" />
+    <Parameter Name="todate" Type="System.DateTime" DbType="DateTime" />
+    <Return Type="System.Int32" />
+  </Function>
+  <Function Name="dbo.usp_getQualCodeInfo" Method="usp_getQualCodeInfo">
+    <Parameter Name="QualCode" Parameter="qualCode" Type="System.String" DbType="VarChar(50)" />
+    <ElementType Name="usp_getQualCodeInfoResult">
+      <Column Name="QualCode" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="QualName" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="QualCategory" Type="System.String" DbType="NVarChar(10)" CanBeNull="true" />
+      <Column Name="SeqNum" Type="System.Int16" DbType="SmallInt NOT NULL" CanBeNull="false" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getQualHistoryUpdates" Method="usp_getQualHistoryUpdates">
+    <Parameter Name="fromdate" Type="System.DateTime" DbType="DateTime" />
+    <Parameter Name="todate" Type="System.DateTime" DbType="DateTime" />
+    <Return Type="System.Int32" />
+  </Function>
+  <Function Name="dbo.usp_getOrgUpdatesDynamics" Method="usp_getOrgUpdatesDynamics">
+    <Parameter Name="fromdate" Type="System.DateTime" DbType="DateTime" />
+    <Parameter Name="todate" Type="System.DateTime" DbType="DateTime" />
+    <ElementType Name="usp_getOrgUpdatesDynamicsResult">
+      <Column Name="result" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getOrgLegalAddress" Method="usp_getOrgLegalAddress">
+    <Parameter Name="TSOrgId" Parameter="tSOrgId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getOrgLegalAddressResult">
+      <Column Name="orgOnyxId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="locationType" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="address1" Type="System.String" DbType="NVarChar(4000)" CanBeNull="true" />
+      <Column Name="address2" Type="System.String" DbType="NVarChar(4000) NOT NULL" CanBeNull="false" />
+      <Column Name="city" Type="System.String" DbType="NVarChar(4000)" CanBeNull="true" />
+      <Column Name="stateRegion" Type="System.String" DbType="NVarChar(4)" CanBeNull="true" />
+      <Column Name="postalCode" Type="System.String" DbType="NVarChar(4000)" CanBeNull="true" />
+      <Column Name="country" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="countryId" Type="System.String" DbType="NVarChar(4)" CanBeNull="true" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+      <Column Name="dynCountryValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="dynStateProvValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getOrgInfoForDynamics" Method="usp_getOrgInfoForDynamics">
+    <Parameter Name="TSOrgId" Parameter="tSOrgId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getOrgInfoForDynamicsResult">
+      <Column Name="iCompanyId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="pngoCode" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="pngoId" Type="System.String" DbType="VarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="pngoName" Type="System.String" DbType="NVarChar(200) NOT NULL" CanBeNull="false" />
+      <Column Name="ppOrgId" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="dynCustomerTypeCode" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="customerType" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="orgSourceId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="orgDesignation" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="countryCode" Type="System.String" DbType="NVarChar(4)" CanBeNull="true" />
+      <Column Name="regionCode" Type="System.String" DbType="NVarChar(4)" CanBeNull="true" />
+      <Column Name="iStatusId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="address1" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="address2" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchAssignedId" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchCity" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchCompanyName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchEmailAddress" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPhoneNumber" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPostCode" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchTaxId" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchURL" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="Budget" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="isEmailValidCode" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="associationCode" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="activityCode" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+      <Column Name="duplicateOfBIT" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="CiscoPartnerFundingCode" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="CiscoPartnerProgamCode" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="CiscoGeographicRegion" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="legalName" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="qualStatusDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="QualStatusCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="QualStatus" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="dynCountryValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="dynStateProvValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCampaignId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getCampaignQualHistory" Method="usp_getCampaignQualHistory">
+    <Parameter Name="iCampaignId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getCampaignQualHistoryResult">
+      <Column Name="iOwnerId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="qualCode" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="campaignStatus" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="latestAction" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="qualStatusDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="iSiteId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCampaignId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iActionId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="dtActionDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="chInsertBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="tiRecordStatus" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="tsTimestamp" Type="System.Data.Linq.Binary" DbType="Binary(8)" CanBeNull="true" />
+      <Column Name="CCA_primaryID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="QualStatusCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="QualStatus" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getOrgContactConnections" Method="usp_getOrgContactConnections">
+    <Parameter Name="tsOrgId" Type="System.Int32" DbType="Int" />
+    <Parameter Name="contactId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getOrgContactConnectionsResult">
+      <Column Name="iOwnerID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iContactID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="conttypeTo" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="conttypeFrom" Type="System.String" DbType="NVarChar(30) NOT NULL" CanBeNull="false" />
+      <Column Name="contactToEntity" Type="System.String" DbType="VarChar(7) NOT NULL" CanBeNull="false" />
+      <Column Name="tiRecordStatus" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getNonOrgQualsForOrg" Method="usp_getNonOrgQualsForOrg">
+    <Parameter Name="tsOrgId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getNonOrgQualsForOrgResult">
+      <Column Name="iOwnerId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iCampaignId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="qualCode" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="campaignStatus" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="latestAction" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="qualStatusDate" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="QualStatusCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="QualStatus" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getContactInfo" Method="usp_getContactInfo">
+    <Parameter Name="TSContactId" Parameter="tSContactId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getContactInfoResult">
+      <Column Name="iIndividualId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iSiteId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="chLanguageCode" Type="System.String" DbType="NChar(4) NOT NULL" CanBeNull="false" />
+      <Column Name="vchAssignedId" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchSalutation" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchFirstName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchMiddleName" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchLastName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchSuffix" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchAddress1" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchAddress2" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchAddress3" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchCity" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chRegionCode" Type="System.String" DbType="NChar(4) NOT NULL" CanBeNull="false" />
+      <Column Name="chCountryCode" Type="System.String" DbType="NChar(4) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPostCode" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchPhoneNumber" Type="System.String" DbType="NVarChar(40) NOT NULL" CanBeNull="false" />
+      <Column Name="vchEmailAddress" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="vchURL" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chGender" Type="System.Char" DbType="NChar(1)" CanBeNull="true" />
+      <Column Name="iUserTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iUserSubTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCompanyId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="vchCompanyName" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chTitleCode" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="vchTitleDesc" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="chDepartmentCode" Type="System.String" DbType="NChar(10)" CanBeNull="true" />
+      <Column Name="vchDepartmentDesc" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="iPhoneTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iAddressTypeId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iSourceId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iStatusId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="bValidAddress" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="iAccessCode" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="bPrivate" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="vchUser1" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser2" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser3" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser4" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser5" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser6" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser7" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser8" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser9" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchUser10" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="chInsertBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="chUpdateBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="tiRecordStatus" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+      <Column Name="customerType" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="emailValidationStatus" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="ctpVerificationCode" Type="System.String" DbType="NVarChar(255) NOT NULL" CanBeNull="false" />
+      <Column Name="dynCountryValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="dynStateProvValueCode" Type="System.Int32" DbType="Int" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getContactUpdates" Method="usp_getContactUpdates">
+    <Parameter Name="fromdate" Type="System.DateTime" DbType="DateTime" />
+    <Parameter Name="todate" Type="System.DateTime" DbType="DateTime" />
+    <Return Type="System.Int32" />
+  </Function>
+  <Function Name="dbo.usp_getNextOrgSetDynamics" Method="usp_getNextOrgSetDynamics">
+    <Parameter Name="lastTSOrgId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getNextOrgSetDynamicsResult">
+      <Column Name="result" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_pickValTrans" Method="usp_pickValTrans">
+    <ElementType Name="usp_pickValTransResult">
+      <Column Name="tsId" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getValRequest" Method="usp_getValRequest">
+    <Parameter Name="transactionId" Type="System.String" DbType="VarChar(100)" />
+    <ElementType Name="usp_getValRequestResult">
+      <Column Name="transactionId" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="scoreMatrix" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Column Name="scoreItems" Type="System.String" DbType="NVarChar(MAX)" CanBeNull="true" />
+      <Column Name="orgDisposition" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="agentDisposition" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="activityCodeFinal" Type="System.String" DbType="VarChar(10)" CanBeNull="true" />
+      <Column Name="rulesEvaluatedAction" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="orgDispositionConfidence" Type="System.String" DbType="VarChar(20)" CanBeNull="true" />
+      <Column Name="agentDispositionConfidence" Type="System.String" DbType="VarChar(20)" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getOrgQualTask" Method="usp_getOrgQualTask">
+    <Parameter Name="tsOrgId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_getOrgQualTaskResult">
+      <Column Name="iIncidentId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iSiteId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iOwnerID" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="chLanguageCode" Type="System.String" DbType="NChar(4) NOT NULL" CanBeNull="false" />
+      <Column Name="iContactId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iIncidentCategory" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="iIncidentTypeId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="vchAssignedId" Type="System.String" DbType="NVarChar(20)" CanBeNull="true" />
+      <Column Name="iTrackingId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="vchSerialNumber" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+      <Column Name="vchProductId" Type="System.String" DbType="NVarChar(20)" CanBeNull="true" />
+      <Column Name="vchDesc1" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchDesc2" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="vchKeyWords" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="iSourceId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iStatusId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iPriorityId" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCode1" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCode2" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCode3" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iCode4" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iTotalTime" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="iTotalLabor" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="bImage" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="chAssignedTo" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="iAccessCode" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="vchUser1" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser2" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser3" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser4" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser5" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser6" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser7" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser8" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser9" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="vchUser10" Type="System.String" DbType="NVarChar(30)" CanBeNull="true" />
+      <Column Name="chInsertBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtInsertDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="chUpdateBy" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="dtUpdateDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="tiRecordStatus" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+      <Column Name="dtModifiedDate" Type="System.DateTime" DbType="SmallDateTime" CanBeNull="true" />
+      <Column Name="associationType" Type="System.String" DbType="VarChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="incidentStatus" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getOrgsOnIRSRevoke" Method="usp_getOrgsOnIRSRevoke">
+    <ElementType Name="usp_getOrgsOnIRSRevokeResult">
+      <Column Name="iCompanyId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="qualcode" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="iTrackingId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="normalizedEIN" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="EIN" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[Legal Name]" Member="Legal_Name" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="[Doing Business As Name]" Member="Doing_Business_As_Name" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="[Organization Address]" Member="Organization_Address" Type="System.String" DbType="VarChar(150)" CanBeNull="true" />
+      <Column Name="City" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="State" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[ZIP Code]" Member="ZIP_Code" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="Country" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[Exemption Type]" Member="Exemption_Type" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[Revocation Date]" Member="Revocation_Date" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="[Revocation Posting Date]" Member="Revocation_Posting_Date" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="[Exemption Reinstatement Date]" Member="Exemption_Reinstatement_Date" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="iCampaignId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="qualStatus" Type="System.String" DbType="NVarChar(50) NOT NULL" CanBeNull="false" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getOrgIRSRevokeInfo" Method="usp_getOrgIRSRevokeInfo">
+    <Parameter Name="ein" Type="System.String" DbType="VarChar(20)" />
+    <ElementType Name="usp_getOrgIRSRevokeInfoResult">
+      <Column Name="iCompanyId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="qualcode" Type="System.String" DbType="NVarChar(25)" CanBeNull="true" />
+      <Column Name="iTrackingId" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="normalizedEIN" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="EIN" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[Legal Name]" Member="Legal_Name" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="[Doing Business As Name]" Member="Doing_Business_As_Name" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="[Organization Address]" Member="Organization_Address" Type="System.String" DbType="VarChar(150)" CanBeNull="true" />
+      <Column Name="City" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="State" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[ZIP Code]" Member="ZIP_Code" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="Country" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[Exemption Type]" Member="Exemption_Type" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="[Revocation Date]" Member="Revocation_Date" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="[Revocation Posting Date]" Member="Revocation_Posting_Date" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+      <Column Name="[Exemption Reinstatement Date]" Member="Exemption_Reinstatement_Date" Type="System.DateTime" DbType="DateTime" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_findValidationRequestAccountMatches" Method="usp_findValidationRequestAccountMatches">
+    <Parameter Name="postalCode" Type="System.String" DbType="VarChar(20)" />
+    <Parameter Name="orgName" Type="System.String" DbType="NVarChar(300)" />
+    <Parameter Name="legalIdentifier" Type="System.String" DbType="NVarChar(150)" />
+    <Parameter Name="url" Type="System.String" DbType="NVarChar(300)" />
+    <Parameter Name="phoneNumber" Type="System.String" DbType="VarChar(50)" />
+    <Parameter Name="countryCode" Type="System.String" DbType="VarChar(2)" />
+    <ElementType Name="usp_findValidationRequestAccountMatchesResult">
+      <Column Name="orgMatches" Type="System.String" DbType="VarChar(4000)" CanBeNull="true" />
+    </ElementType>
+  </Function>
+</Database>

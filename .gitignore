@@ -1,0 +1,15 @@
+# Config files with secrets
+*.config
+!packages.config
+
+# Build outputs
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# NuGet packages (can be restored)
+packages/

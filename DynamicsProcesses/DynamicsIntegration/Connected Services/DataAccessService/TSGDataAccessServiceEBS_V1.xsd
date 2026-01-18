@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:tns="http://www.techsoupglobal.org/dbcalloutservice/" attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="http://www.techsoupglobal.org/dbcalloutservice/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="DBRequest" type="tns:DBRequestType" />
+  <xs:complexType name="DBRequestType">
+    <xs:sequence>
+      <xs:element minOccurs="0" form="unqualified" name="ServerName" type="xs:string" />
+      <xs:element form="unqualified" name="DBName" nillable="true" type="xs:string" />
+      <xs:element form="unqualified" name="SPName" nillable="true" type="xs:string" />
+      <xs:element minOccurs="0" form="unqualified" name="params" type="tns:rowType" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="rowType">
+    <xs:sequence>
+      <xs:any minOccurs="0" maxOccurs="unbounded" processContents="skip" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="DBResponse" type="tns:ArrayOfRowType" />
+  <xs:complexType name="ArrayOfRowType">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" form="unqualified" name="row" type="tns:rowType" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="executeReturnRecordsetsResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" name="recordsets" type="tns:ArrayOfRecordsetType" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="ArrayOfRecordsetType">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" form="unqualified" name="recordset" type="tns:recordsetType" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="recordsetType">
+    <xs:sequence>
+      <xs:element minOccurs="0" name="Rows" type="tns:ArrayOfRowType1" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="ArrayOfRowType1">
+    <xs:sequence>
+      <xs:element minOccurs="0" maxOccurs="unbounded" name="rowType" nillable="true" type="tns:rowType" />
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

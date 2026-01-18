@@ -1,0 +1,2115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:cm="http://compumentor.org/orderservice" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy" name="OrderService" targetNamespace="http://compumentor.org/orderservice" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <xsd:schema targetNamespace="http://compumentor.org/orderservice">
+      <xsd:element name="orderServiceCreateResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="returnXml">
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element minOccurs="0" maxOccurs="1" name="orderRefId" type="xsd:string" />
+                  <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+                  <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+                  <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:createRequestType" />
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceCreateRequest" type="cm:createRequestType" />
+      <xsd:element name="orderServiceStatusResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="returnXml">
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+                  <xsd:element minOccurs="0" maxOccurs="1" name="order" type="cm:orderStatusType" />
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceStatusRequest" type="cm:statusRequestType" />
+      <xsd:element name="orderServiceCancelRequest" type="cm:cancelRequestType" />
+      <xsd:element name="orderServiceCancelResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+            <xsd:element minOccurs="1" maxOccurs="1" name="returnXml">
+              <xsd:complexType>
+                <xsd:sequence>
+                  <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+                  <xsd:element minOccurs="0" maxOccurs="1" name="orderRefId" type="xsd:string" />
+                  <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+                  <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:cancelRequestType" />
+                </xsd:sequence>
+              </xsd:complexType>
+            </xsd:element>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:complexType name="createRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="userTSID" type="xsd:unsignedInt" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="userName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:unsignedInt" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="order" type="cm:orderType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="payments" type="cm:paymentsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="paymentList" type="cm:paymentListType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="userTSEmail" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="addLicenseCart" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="statusRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="userTSID" type="xsd:unsignedInt" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orgTSID" type="xsd:unsignedInt" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orgRefId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:unsignedInt" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="cancelRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="userTSID" type="xsd:unsignedInt" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:unsignedInt" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:unsignedInt" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="subSystemType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="subSystemId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="subSystemDescription" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="subSystemErrorCode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="errorTypeType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="errorTypeId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="errorTypeDescription" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="errorSeverityType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="errorSeverityId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="errorSeverityDescription" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="errorType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="eventId" type="xsd:int" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="errorCode" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="subSystem" type="cm:subSystemType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="errorType" type="cm:errorTypeType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="errorSeverity" type="cm:errorSeverityType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="internalMessage" type="cm:errorMessageType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="externalMessage" type="cm:errorMessageType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="errorMessageType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="text" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="textAndParams" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="param" type="cm:paramType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="errorsType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="error" type="cm:errorType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paramType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="paramName" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="paramDescription" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="preText" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paramValue" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="postText" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="addressComplexType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="address1" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="address2" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="address3" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="city" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="regionCode" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="countryCode" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="postalCode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="vendorDataType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="vendorName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="authorizationStatusCode" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="authorizationStatusText" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="authorizationNumber" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="licenseNumber" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="licenseDate" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="invoiceNumber" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="confirmationNumber" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentInfoType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="checks" type="cm:checkPaymentTypes" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="cards" type="cm:ccPaymentTypes" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="achs" type="cm:achPaymentTypes" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="checkPaymentTypes">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="check" type="cm:checkPaymentType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="checkPaymentType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="checkNum" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="checkAmount" type="cm:moneyType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="datePosted" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="ccPaymentTypes">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="card" type="cm:ccPaymentType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="ccPaymentType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="cardType" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="maskedNum" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="amount" type="cm:moneyType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="cardStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="processType" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="expMonth" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="expYear" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="address" type="cm:addressComplexType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="moneyType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="currencyCode" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="value" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="orderStatusType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderRefId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderDateTime" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="qualificationStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="webStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentMode" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="shipTo">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+                <xsd:element minOccurs="1" maxOccurs="1" name="orgRefId" type="xsd:string" />
+                <xsd:element minOccurs="1" maxOccurs="1" name="orgName" type="xsd:string" />
+                <xsd:element minOccurs="1" maxOccurs="1" name="shipToName" type="xsd:string" />
+                <xsd:element minOccurs="1" maxOccurs="1" name="shipToEmail" type="xsd:string" />
+                <xsd:element minOccurs="1" maxOccurs="1" name="address">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element minOccurs="1" maxOccurs="1" name="address1" type="xsd:string" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="address2" type="xsd:string" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="address3" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="city" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="regionCode" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="countryCode" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="postalCode" type="xsd:string" />
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+                <xsd:element minOccurs="1" maxOccurs="1" name="shipOptions">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element minOccurs="0" maxOccurs="unbounded" name="shipOption" type="xsd:string" />
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderValue" type="cm:moneyType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTaxValue" type="cm:moneyType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderShipCost" type="cm:moneyType" />
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="vendorData" type="cm:vendorDataType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="paymentInfo" type="cm:paymentInfoType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="lineItems">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="1" maxOccurs="unbounded" name="lineItem">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element minOccurs="1" maxOccurs="1" name="lineNumber" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="itemName" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="itemType" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="quantity" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="unitPrice" type="cm:moneyType" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="lineTotalPrice" type="cm:moneyType" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="salesStatus" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="lineStatus" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="lineWebStatus" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="programCode" type="xsd:string" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="programQualification" type="xsd:string" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="shippedDate" type="xsd:string" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="shipTrackingCode" type="xsd:string" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="trackingData" type="cm:trackingDataType" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="packingSlipNote" type="xsd:string" />
+                      <xsd:element minOccurs="0" maxOccurs="unbounded" name="extendedData">
+                        <xsd:complexType>
+                          <xsd:simpleContent>
+                            <xsd:extension base="xsd:string">
+                              <xsd:attribute name="name" type="xsd:string" use="required" />
+                            </xsd:extension>
+                          </xsd:simpleContent>
+                        </xsd:complexType>
+                      </xsd:element>
+                      <xsd:element minOccurs="0" maxOccurs="1" name="lineDiscountTotal" type="cm:moneyType" />
+                      <xsd:element minOccurs="0" maxOccurs="1" name="returnedDate" type="xsd:string" />
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderDiscount" type="cm:moneyType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="isSubscription" type="xsd:boolean" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="subscriptionContractStartDate" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="subscriptionContractEndDate" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="balance" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="additionalInfo" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="acceptACH" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="acceptCheck" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="forceReusePayment" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="hasMSOpenValue" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="eAgreement" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentsType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="partnerPayment">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="1" maxOccurs="1" name="partnerAccountId" type="xsd:string" />
+                <xsd:element minOccurs="0" maxOccurs="1" name="paymentDateTime" type="xsd:string" />
+                <xsd:element minOccurs="1" maxOccurs="1" name="paymentAmount" type="cm:moneyType" />
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="orderType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderRefId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderDateTime" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="contactId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="shipTo">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="1" maxOccurs="1" name="name" type="xsd:string" />
+                <xsd:element minOccurs="1" maxOccurs="1" name="address" type="cm:addressComplexType" />
+                <xsd:element minOccurs="0" maxOccurs="1" name="shipOptions">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element minOccurs="1" maxOccurs="unbounded" name="shipOption" type="xsd:string" />
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderValue" type="cm:moneyType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTaxValue" type="cm:moneyType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderShipCost" type="cm:moneyType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="lineItems">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="1" maxOccurs="unbounded" name="lineItem">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element minOccurs="1" maxOccurs="1" name="lineNumber" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="quantity" type="xsd:string" />
+                      <xsd:element minOccurs="1" maxOccurs="1" name="unitPrice" type="cm:moneyType" />
+                      <xsd:element minOccurs="0" maxOccurs="unbounded" name="extendedData">
+                        <xsd:complexType>
+                          <xsd:simpleContent>
+                            <xsd:extension base="xsd:string">
+                              <xsd:attribute name="name" type="xsd:string" use="required" />
+                            </xsd:extension>
+                          </xsd:simpleContent>
+                        </xsd:complexType>
+                      </xsd:element>
+                      <xsd:element minOccurs="0" maxOccurs="1" name="discountInfo" type="cm:discountInfoType" />
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="orderServiceUpdateAuthRequest" type="cm:updateAuthRequestType" />
+      <xsd:element name="orderServiceUpdateAuthResponse" type="cm:updateAuthResponseType" />
+      <xsd:complexType name="updateAuthRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="authData" type="cm:authType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="authType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authorizationNumber" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="licenseNumber" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="licenseDate" type="xsd:dateTime" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="invoiceNumber" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="confirmationNumber" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="updateAuthResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="0" maxOccurs="1" name="orderRefId" type="xsd:string" />
+                <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+                <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+                <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:updateAuthRequestType" />
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="orderServiceGetUserOrdersRequest" type="cm:getUserOrdersRequestType" />
+      <xsd:element name="orderServiceGetUserOrdersResponse" type="cm:getUserOrdersResponseType" />
+      <xsd:complexType name="getUserOrdersRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="userTSID" type="xsd:unsignedInt" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="inclusionCriteria" type="cm:inclusionCriteriaType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="exclusionCriteria" type="cm:exclusionCriteriaType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getUserOrdersResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="0" maxOccurs="1" name="orders">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element minOccurs="1" maxOccurs="unbounded" name="orderHeader">
+                        <xsd:complexType>
+                          <xsd:sequence>
+                            <xsd:element name="orderTSID" type="xsd:unsignedInt" />
+                            <xsd:element name="orgName" type="xsd:string" />
+                            <xsd:element name="orderDate" type="xsd:dateTime" />
+                            <xsd:element name="orderStatus" type="xsd:string" />
+                            <xsd:element name="paymentMode" type="xsd:string" />
+                            <xsd:element name="paymentStatus" type="xsd:string" />
+                            <xsd:element name="totalAdminFee" type="cm:moneyType" />
+                            <xsd:element name="totalShipCost" type="cm:moneyType" />
+                            <xsd:element name="programCode" type="xsd:string" />
+                            <xsd:element name="employeeName" type="xsd:string" />
+                            <xsd:element name="remainingBalance" type="cm:moneyType" />
+                            <xsd:element name="allowanceExpiration" type="xsd:dateTime" />
+                            <xsd:element minOccurs="0" maxOccurs="1" name="subscription" type="xsd:boolean" />
+                          </xsd:sequence>
+                        </xsd:complexType>
+                      </xsd:element>
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+                <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+                <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:getUserOrdersRequestType" />
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentMethodType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentOption" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="creditCard" type="cm:creditCardType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="creditCardType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="name" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="ccNum" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="authNum" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="ccType" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="ccDate" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="address" type="cm:addressComplexType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="streetMatch" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="zipMatch" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="getVendorOrderHistory">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="getVendorOrderHistoryResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceGetVendorOrderHistoryRequest" type="cm:getVendorOrderHistoryRequestType" />
+      <xsd:element name="orderServiceGetVendorOrderHistoryResponse" type="cm:getVendorOrderHistoryResponseType" />
+      <xsd:complexType name="getVendorOrderHistoryRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="vendorName" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getVendorOrderHistoryResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:getVendorOrderHistoryReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="vendorOrderType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderId" type="xsd:int" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderDate" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="programCode" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="qualCode" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="titleGroup" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="licenseType" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="price" type="xsd:float" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="quantity" type="xsd:int" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="productName" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="retailValue" type="xsd:float" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getVendorOrderHistoryReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="cycleStartDate" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="fairMarketValue" type="xsd:float" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="vendorOrders" type="cm:vendorOrdersType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="erros" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="vendorOrdersType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="vendorOrder" type="cm:vendorOrderType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="trackingDataType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="trackingInfo" type="cm:trackingInfoType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="trackingInfoType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="trackingNumber" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="carrierCode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="taxedItemType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="lineItemId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="vendorName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="taxCode" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="totalCogs" type="xsd:decimal" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="taxAmount" type="xsd:decimal" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="hasMedia" type="xsd:boolean" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="taxedItemListType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="taxedLineItem" type="cm:taxedItemType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="calculateTaxRequest" type="cm:calculateTaxRequestType" />
+      <xsd:element name="calculateTaxResponse" type="cm:calculateTaxResponseType" />
+      <xsd:complexType name="calculateTaxRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgId" type="xsd:int" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="shippingAmount" type="xsd:decimal" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="address" type="cm:addressComplexType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="lineItemList" type="cm:lineItemListType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="calculateTaxResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:calculateTaxReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="calculateTaxReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="taxedLineItemList" type="cm:taxedItemListType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="lineItemType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="lineItemId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="totalCogs" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="hasMedia" type="xsd:boolean" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="lineItemListType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="lineItem" type="cm:lineItemType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="getOrdersWithFiltersRequest" type="cm:getOrdersWithFiltersRequestType" />
+      <xsd:element name="getOrdersWithFiltersResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:complexType name="getOrdersWithFiltersRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="userTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orgTSIDList" type="cm:orgTSIDListType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="programCodeList" type="cm:programCodeListType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="beginDate" type="xsd:dateTime" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="endDate" type="xsd:dateTime" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="orgTSIDListType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="orgTSID" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="programCodeListType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="programCode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="inclusionCriteriaType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSIDList" type="cm:orgTSIDListType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="programCodeList" type="cm:programCodeListType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="paymentModeList" type="cm:paymentModeListType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="beginDate" type="xsd:dateTime" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="endDate" type="xsd:dateTime" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentModeListType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="paymentMode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="exclusionCriteriaType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="paymentModeList" type="cm:paymentModeListType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentListType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="payment" type="cm:paymentType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="discountInfoType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="discount" type="cm:discountType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="discountType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="name" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="transactionId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="amount" type="cm:moneyType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentsOption" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="creditCard" type="cm:creditCardType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="discountInfo" type="cm:discountInfoType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="achPayment" type="cm:achPaymentType" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentAmount" type="cm:moneyType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="paymentMethodToken" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="reusePayment" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentsOptionType" />
+      <xsd:element name="orderServiceGetOrgSubscriptionsRequest" type="cm:getOrgSubscriptionsRequestType" />
+      <xsd:element name="orderServiceGetOrgSubscriptionsResponse" type="cm:getOrgSubscriptionsResponseType" />
+      <xsd:complexType name="getOrgSubscriptionsRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:int" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getOrgSubscriptionsResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element minOccurs="0" maxOccurs="1" name="subscriptions">
+                  <xsd:complexType>
+                    <xsd:sequence>
+                      <xsd:element minOccurs="1" maxOccurs="unbounded" name="subscription" type="xsd:string" />
+                    </xsd:sequence>
+                  </xsd:complexType>
+                </xsd:element>
+                <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+                <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:getOrgSubscriptionsRequestType" />
+              </xsd:sequence>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="achPaymentType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="achAccountNumber" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="achRoutingNumber" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="transactionId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="name" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="achOwnershipType" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="address" type="cm:addressComplexType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="amount" type="cm:moneyType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="status" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="updatePayment">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="updatePaymentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceUpdatePaymentRequest" type="cm:updatePaymentRequestType" />
+      <xsd:element name="orderServiceUpdatePaymentResponse" type="cm:updatePaymentResponseType" />
+      <xsd:complexType name="updatePaymentRequestType">
+        <xsd:sequence>
+          <xsd:element name="authKey" type="xsd:string" />
+          <xsd:element name="orgTSID" type="xsd:string" />
+          <xsd:element name="orderTSID" type="xsd:string" />
+          <xsd:element name="paymentList" type="cm:paymentListType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="updatePaymentResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:updatePaymentReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="updatePaymentReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="blockFulfillment">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="blockFulfillmentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceBlockFulfillmentRequest" type="cm:blockFulfillmentRequestType" />
+      <xsd:element name="orderServiceBlockFulfillmentResponse" type="cm:blockFulfillmentResponseType" />
+      <xsd:complexType name="blockFulfillmentRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="blockId" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="blockFulfillmentResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:blockFulfillmentReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="blockFulfillmentReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="subscriptionContractDateType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="contractStartDate" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="contractEndDate" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="isSubscriptionProducts">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="isSubscriptionProductsResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceIsSubscriptionProductsRequest" type="cm:isSubscriptionProductRequestType" />
+      <xsd:element name="orderServiceIsSubscriptionProductsResponse" type="cm:isSubscriptionProductsResponseType" />
+      <xsd:complexType name="isSubscriptionProductRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productIds" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isSubscriptionProductsResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:isSubscriptionProductsReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isSubscriptionProductsReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="itemSubscription" type="cm:itemSubscriptionType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="itemSubscriptionType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="isSubscriptionProduct" type="xsd:boolean" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="achPaymentTypes">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="unbounded" name="ach" type="cm:achPaymentType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="isMSDiscounted">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="isMSDiscountedResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceIsMSDiscountedRequest" type="cm:isMSDiscountedRequestType" />
+      <xsd:element name="orderServiceIsMSDiscountedResponse" type="cm:isMSDiscountedResponseType" />
+      <xsd:complexType name="isMSDiscountedRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productIds" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isMSDiscountedResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:isMSDiscountedReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isMSDiscountedReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="isMSCertified" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="isMSDiscountItemList" type="cm:isMSDiscountItemListType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isMSDiscountItemType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="isMSDiscount" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isMSDiscountItemListType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="isMSDiscountItem" type="cm:isMSDiscountItemType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="getBoostInfo">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="getBoostInfoResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceGetBoostInfoRequest" type="cm:getBoostInfoRequestType" />
+      <xsd:element name="orderServiceGetBoostInfoResponse" type="cm:getBoostInfoResponseType" />
+      <xsd:complexType name="getBoostInfoRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getBoostInfoResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:getBoostInfoReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getBoostInfoReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="firstSubscription" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="expirationDate" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="orderServiceOrgSubscriptionsCheckRequest" type="cm:orgSubscriptionCheckType" />
+      <xsd:element name="orderServiceOrgSubscriptionsCheckResponse" type="cm:orgSubscriptionsCheckResponseType" />
+      <xsd:complexType name="orgSubscriptionCheckType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="orgSubscriptionsCheckResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:orgSubsciptionsCheckReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="orgSubsciptionsCheckReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="isAlreadyASubscriber" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="isOrgQualified" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="openOrder" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errorMsgs" type="cm:errorMsgsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errorMsg" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="subscriptionProductsType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="product" type="cm:subscriptionProductType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="subscriptionProductType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errorMsg" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="errorMsgsType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="errorMsg" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="getCiscoEPDPOrder">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="getCiscoEPDPOrderResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceGetCiscoEPDPOrderRequest" type="cm:getCiscoEPDPOrderRequestType" />
+      <xsd:element name="orderServiceGetCiscoEPDPOrderResponse" type="cm:getCiscoEPDPOrderResponseType" />
+      <xsd:complexType name="getCiscoEPDPOrderRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getCiscoEPDPOrderResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:getCiscoEPDPOrderReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getCiscoEPDPOrderReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="epdpOrder" type="cm:epdpOrderType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="epdpOrderType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTotal" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentCollected" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="addPayment">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="addPaymentResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceAddPaymentRequest" type="cm:addPaymentRequestType" />
+      <xsd:element name="orderServiceAddPaymentResponse" type="cm:addPaymentResponseType" />
+      <xsd:complexType name="addPaymentRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentList" type="cm:paymentListType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="addPaymentResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:addPaymentReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="addPaymentReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="achPaymentStatus">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="achPaymentStatusResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceAchPaymentStatusRequest" type="cm:achPaymentStatusRequestType" />
+      <xsd:element name="orderServiceAchPaymentStatusResponse" type="cm:achPaymentStatusResponseType" />
+      <xsd:complexType name="achPaymentStatusRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="transactionId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="status" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="achPaymentStatusResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:achPaymentStatusReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="achPaymentStatusReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="message" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="saveAgreementNumber">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="saveAgreementNumberResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceSaveAgreementNumberRequest" type="cm:saveAgreementNumberRequestType" />
+      <xsd:element name="orderServiceSaveAgreementNumberResponse" type="cm:saveAgreementNumberResponseType" />
+      <xsd:complexType name="saveAgreementNumberRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="agreementNumber" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="agreementEndDate" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveAgreementNumberResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:saveAgreementNumberReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveAgreementNumberReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:saveAgreementNumberRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="unityOrgTitleIntendToUse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="unityOrgTitleIntendToUseResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceUnityOrgTitleIntendToUseRequest" type="cm:unityOrgTitleIntendToUseRequestType" />
+      <xsd:element name="orderServiceUnityOrgTitleIntendToUseResponse" type="cm:unityOrgTitleIntendToUseResponseType" />
+      <xsd:complexType name="unityOrgTitleIntendToUseRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="unityOrgTitle" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="unityIntendToUse" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="unityPercentUnderservedUnderRep" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="unityOrgTitleIntendToUseResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:unityOrgTitleIntendToUseReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="unityOrgTitleIntendToUseReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:unityOrgTitleIntendToUseRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="orderServiceGetSubscriptionUnitPriceRequest" type="cm:getSubscriptionUnitPriceRequestType" />
+      <xsd:element name="orderServiceGetSubscriptionUnitPriceResponse" type="cm:getSubscriptionUnitPriceResponseType" />
+      <xsd:complexType name="getSubscriptionUnitPriceRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getSubscriptionUnitPriceResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:getSubscriptionUnitPriceReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getSubscriptionUnitPriceReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="unitPrice" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="isProrated" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:getSubscriptionUnitPriceRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="orderServiceGetOrgVendorSubscriptionsRequest" type="cm:getOrgVendorSubscriptionsRequestType" />
+      <xsd:element name="orderServiceGetOrgVendorSubscriptionsResponse" type="cm:getOrgVendorSubscriptionsResponseType" />
+      <xsd:complexType name="getOrgVendorSubscriptionsRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="donorPartner" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="productId" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getOrgVendorSubscriptionsResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:getOrgVendorSubscriptionsReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getOrgVendorSubscriptionsReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orgVendorSubscriptions" type="cm:orgVendorSubscriptionsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:getOrgVendorSubscriptionsRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="orgVendorSubscriptionsType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="orgVendorSubscription" type="cm:orgVendorSubscriptionType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="orgVendorSubscriptionType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="donorPartner" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="proratedUnitPrice" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="licenseQuantity" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="subscriptionEndDate" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="programCode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="getOrgVendLatestPayMethod">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="getOrgVendLatestPayMethodResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceGetLatestPayMethodRequest" type="cm:getLatestPayMethodRequestType" />
+      <xsd:element name="orderServiceGetLatestPayMethodResponse" type="cm:getLatestPayMethodResponseType" />
+      <xsd:complexType name="getLatestPayMethodRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="donorPartner" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getLatestPayMethodResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:getLatestPayMethodReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getLatestPayMethodReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="paymentInfo" type="cm:paymentMethodTokenType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:getLatestPayMethodRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="paymentMethodTokenType">
+        <xsd:sequence>
+          <xsd:element name="creditcard" type="cm:ccPayMethodTokenType" />
+          <xsd:element name="ach" type="cm:achPayMethodTokenType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="ccPayMethodTokenType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentType" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentMethodToken" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="ccLastFourDigits" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="ccExpirationDate" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="accountPostalCode" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="achPayMethodTokenType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentType" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="paymentMethodToken" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="achAccountNumber" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="achRoutingNumber" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="nameOnAccount" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="accountStreet" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="accountPostalCode" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="achOwnershipType" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="getAdobeExpressActiveLic">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="getAdobeExpressActiveLicResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceGetAdobeExpressActiveLicRequest" type="cm:getAdobeExpressActiveLicRequestType" />
+      <xsd:element name="orderServiceGetAdobeExpressActiveLicResponse" type="cm:getAdobeExpressActiveLicResponseType" />
+      <xsd:complexType name="getAdobeExpressActiveLicRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getAdobeExpressActiveLicResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:getAdobeExpressActiveLicReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="getAdobeExpressActiveLicReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="maxLicQty" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="activeLicQty" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="availableQty" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="licAdminFee" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:getAdobeExpressActiveLicRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="isAdobeExpressEmailActive">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="isAdobeExpressEmailActiveResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceIsAdobeExpressEmailActiveRequest" type="cm:isAdobeExpressEmailActiveRequestType" />
+      <xsd:element name="orderServiceIsAdobeExpressEmailActiveResponse" type="cm:isAdobeExpressEmailActiveResponseType" />
+      <xsd:element name="saveAdobeExpressEmail">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="saveAdobeExpressEmailResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceSaveAdobeExpressEmailRequest" type="cm:saveAdobeExpressEmailRequestType" />
+      <xsd:element name="orderServiceSaveAdobeExpressEmailResponse" type="cm:saveAdobeExpressEmailResponseType" />
+      <xsd:complexType name="isAdobeExpressEmailActiveRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="emails" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isAdobeExpressEmailActiveResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:isAdobeExpressEmailActiveReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="isAdobeExpressEmailActiveReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="emailsIsActiveCheck" type="cm:emailsIsActiveCheckType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:isAdobeExpressEmailActiveRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="emailIsActiveCheckType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="email" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="isActive" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="emailsIsActiveCheckType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="unbounded" name="emailIsActiveCheck" type="cm:emailIsActiveCheckType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveAdobeExpressEmailRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="productId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="emails" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="firstNames" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="lastNames" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveAdobeExpressEmailResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:saveAdobeExpressEmailReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveAdobeExpressEmailReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:saveAdobeExpressEmailRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="saveOrgResellerOrder">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="saveOrgResellerOrderResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceSaveOrgResellerOrderRequest" type="cm:saveOrgResellerOrderRequestType" />
+      <xsd:element name="orderServiceSaveOrgResellerOrderResponse" type="cm:saveOrgResellerOrderResponseType" />
+      <xsd:complexType name="saveOrgResellerOrderRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgResellerOrderId" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgResellerDomain" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgResellerDomainStatus" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveOrgResellerOrderResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:saveOrgResellerOrderReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveOrgResellerOrderReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="message" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:saveOrgResellerOrderRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="saveOrderReference">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="saveOrderReferenceResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceSaveOrderReferenceRequest" type="cm:saveOrderReferenceRequestType" />
+      <xsd:element name="orderServiceSaveOrderReferenceResponse" type="cm:saveOrderReferenceResponseType" />
+      <xsd:complexType name="saveOrderReferenceRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="referenceType" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="referenceValue" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveOrderReferenceResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:saveOrderReferenceReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="saveOrderReferenceReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="orderTSID" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="message" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:saveOrderReferenceRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:element name="updateOrgQual">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="in" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="updateOrgQualResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="out" type="xsd:string" />
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="orderServiceUpdateOrgQualRequest" type="cm:updateOrgQualRequestType" />
+      <xsd:element name="orderServiceUpdateOrgQualResponse" type="cm:updateOrgQualResponseType" />
+      <xsd:complexType name="updateOrgQualRequestType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="authKey" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="orgTSID" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="qualStatus" type="xsd:string" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="updateOrgQualResponseType">
+        <xsd:sequence>
+          <xsd:element minOccurs="1" maxOccurs="1" name="serviceName" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="action" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="resultStatus" type="xsd:string" />
+          <xsd:element minOccurs="1" maxOccurs="1" name="returnXml" type="cm:updateOrgQualReturnXmlType" />
+        </xsd:sequence>
+      </xsd:complexType>
+      <xsd:complexType name="updateOrgQualReturnXmlType">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="message" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="errors" type="cm:errorsType" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="requestXml" type="cm:updateOrgQualRequestType" />
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:schema>
+  </wsdl:types>
+  <wsdl:message name="orderCreateResponse">
+    <wsdl:part name="orderServiceCreateResponse" element="cm:orderServiceCreateResponse" />
+  </wsdl:message>
+  <wsdl:message name="orderCreateRequest">
+    <wsdl:part name="orderServiceCreateRequest" element="cm:orderServiceCreateRequest" />
+  </wsdl:message>
+  <wsdl:message name="orderStatusResponse">
+    <wsdl:part name="orderServiceStatusResponse" element="cm:orderServiceStatusResponse" />
+  </wsdl:message>
+  <wsdl:message name="orderStatusRequest">
+    <wsdl:part name="orderServiceStatusRequest" element="cm:orderServiceStatusRequest" />
+  </wsdl:message>
+  <wsdl:message name="orderCancelRequest">
+    <wsdl:part name="orderServiceCancelRequest" element="cm:orderServiceCancelRequest" />
+  </wsdl:message>
+  <wsdl:message name="orderCancelResponse">
+    <wsdl:part name="orderServiceCancelResponse" element="cm:orderServiceCancelResponse" />
+  </wsdl:message>
+  <wsdl:message name="updateAuthRequest">
+    <wsdl:part name="orderServiceUpdateAuthRequest" element="cm:orderServiceUpdateAuthRequest" />
+  </wsdl:message>
+  <wsdl:message name="updateAuthResponse">
+    <wsdl:part name="orderServiceUpdateAuthResponse" element="cm:orderServiceUpdateAuthResponse" />
+  </wsdl:message>
+  <wsdl:message name="getUserOrdersRequest">
+    <wsdl:part name="orderServiceGetUserOrdersRequest" element="cm:orderServiceGetUserOrdersRequest" />
+  </wsdl:message>
+  <wsdl:message name="getUserOrdersResponse">
+    <wsdl:part name="orderServiceGetUserOrdersResponse" element="cm:orderServiceGetUserOrdersResponse" />
+  </wsdl:message>
+  <wsdl:message name="getVendorOrderHistoryRequest">
+    <wsdl:part name="orderServiceGetVendorOrderHistoryRequest" element="cm:orderServiceGetVendorOrderHistoryRequest" />
+  </wsdl:message>
+  <wsdl:message name="getVendorOrderHistoryResponse">
+    <wsdl:part name="orderServiceGetVendorOrderHistoryResponse" element="cm:orderServiceGetVendorOrderHistoryResponse" />
+  </wsdl:message>
+  <wsdl:message name="calculateTaxRequest">
+    <wsdl:part name="calculateTaxRequest" element="cm:calculateTaxRequest" />
+  </wsdl:message>
+  <wsdl:message name="calculateTaxResponse">
+    <wsdl:part name="calculateTaxResponse" element="cm:calculateTaxResponse" />
+  </wsdl:message>
+  <wsdl:message name="getOrdersWithFiltersRequest">
+    <wsdl:part name="getOrdersWithFiltersRequest" element="cm:getOrdersWithFiltersRequest" />
+  </wsdl:message>
+  <wsdl:message name="getOrdersWithFiltersResponse">
+    <wsdl:part name="getOrdersWithFiltersResponse" element="cm:getOrdersWithFiltersResponse" />
+  </wsdl:message>
+  <wsdl:message name="getOrgSubscriptionsRequest">
+    <wsdl:part name="orderServiceGetOrgSubscriptionsRequest" element="cm:orderServiceGetOrgSubscriptionsRequest" />
+  </wsdl:message>
+  <wsdl:message name="getOrgSubscriptionsResponse">
+    <wsdl:part name="orderServiceGetOrgSubscriptionsResponse" element="cm:orderServiceGetOrgSubscriptionsResponse" />
+  </wsdl:message>
+  <wsdl:message name="updatePaymentRequest">
+    <wsdl:part name="orderServiceUpdatePaymentRequest" element="cm:orderServiceUpdatePaymentRequest" />
+  </wsdl:message>
+  <wsdl:message name="updatePaymentResponse">
+    <wsdl:part name="orderServiceUpdatePaymentResponse" element="cm:orderServiceUpdatePaymentResponse" />
+  </wsdl:message>
+  <wsdl:message name="blockFulfillmentRequest">
+    <wsdl:part name="orderServiceBlockFulfillmentRequest" element="cm:orderServiceBlockFulfillmentRequest" />
+  </wsdl:message>
+  <wsdl:message name="blockFulfillmentResponse">
+    <wsdl:part name="orderServiceBlockFulfillmentResponse" element="cm:orderServiceBlockFulfillmentResponse" />
+  </wsdl:message>
+  <wsdl:message name="isSubscriptionProductsRequest">
+    <wsdl:part name="orderServiceIsSubscriptionProductsRequest" element="cm:orderServiceIsSubscriptionProductsRequest" />
+  </wsdl:message>
+  <wsdl:message name="isSubscriptionProductsResponse">
+    <wsdl:part name="orderServiceIsSubscriptionProductsResponse" element="cm:orderServiceIsSubscriptionProductsResponse" />
+  </wsdl:message>
+  <wsdl:message name="isMSDiscountedRequest">
+    <wsdl:part name="orderServiceIsMSDiscountedRequest" element="cm:orderServiceIsMSDiscountedRequest" />
+  </wsdl:message>
+  <wsdl:message name="isMSDiscountedResponse">
+    <wsdl:part name="orderServiceIsMSDiscountedResponse" element="cm:orderServiceIsMSDiscountedResponse" />
+  </wsdl:message>
+  <wsdl:message name="getBoostInfoRequest">
+    <wsdl:part name="orderServiceGetBoostInfoRequest" element="cm:orderServiceGetBoostInfoRequest" />
+  </wsdl:message>
+  <wsdl:message name="getBoostInfoResponse">
+    <wsdl:part name="orderServiceGetBoostInfoResponse" element="cm:orderServiceGetBoostInfoResponse" />
+  </wsdl:message>
+  <wsdl:message name="orgSubscriptionsCheckRequest">
+    <wsdl:part name="orderServiceOrgSubscriptionsCheckRequest" element="cm:orderServiceOrgSubscriptionsCheckRequest" />
+  </wsdl:message>
+  <wsdl:message name="orgSubscriptionsCheckResponse">
+    <wsdl:part name="orderServiceOrgSubscriptionsCheckResponse" element="cm:orderServiceOrgSubscriptionsCheckResponse" />
+  </wsdl:message>
+  <wsdl:message name="getCiscoEPDPOrderRequest">
+    <wsdl:part name="orderServiceGetCiscoEPDPOrderRequest" element="cm:orderServiceGetCiscoEPDPOrderRequest" />
+  </wsdl:message>
+  <wsdl:message name="getCiscoEPDPOrderResponse">
+    <wsdl:part name="orderServiceGetCiscoEPDPOrderResponse" element="cm:orderServiceGetCiscoEPDPOrderResponse" />
+  </wsdl:message>
+  <wsdl:message name="addPaymentRequest">
+    <wsdl:part name="orderServiceAddPaymentRequest" element="cm:orderServiceAddPaymentRequest" />
+  </wsdl:message>
+  <wsdl:message name="addPaymentResponse">
+    <wsdl:part name="orderServiceAddPaymentResponse" element="cm:orderServiceAddPaymentResponse" />
+  </wsdl:message>
+  <wsdl:message name="achPaymentStatusRequest">
+    <wsdl:part name="orderServiceAchPaymentStatusRequest" element="cm:orderServiceAchPaymentStatusRequest" />
+  </wsdl:message>
+  <wsdl:message name="achPaymentStatusResponse">
+    <wsdl:part name="orderServiceAchPaymentStatusResponse" element="cm:orderServiceAchPaymentStatusResponse" />
+  </wsdl:message>
+  <wsdl:message name="saveAgreementNumberRequest">
+    <wsdl:part name="orderServiceSaveAgreementNumberRequest" element="cm:orderServiceSaveAgreementNumberRequest" />
+  </wsdl:message>
+  <wsdl:message name="saveAgreementNumberResponse">
+    <wsdl:part name="orderServiceSaveAgreementNumberResponse" element="cm:orderServiceSaveAgreementNumberResponse" />
+  </wsdl:message>
+  <wsdl:message name="unityOrgTitleIntendToUseRequest">
+    <wsdl:part name="orderServiceUnityOrgTitleIntendToUseRequest" element="cm:orderServiceUnityOrgTitleIntendToUseRequest" />
+  </wsdl:message>
+  <wsdl:message name="unityOrgTitleIntendToUseResponse">
+    <wsdl:part name="orderServiceUnityOrgTitleIntendToUseResponse" element="cm:orderServiceUnityOrgTitleIntendToUseResponse" />
+  </wsdl:message>
+  <wsdl:message name="getSubscriptionUnitPriceRequest">
+    <wsdl:part name="orderServiceGetSubscriptionUnitPriceRequest" element="cm:orderServiceGetSubscriptionUnitPriceRequest" />
+  </wsdl:message>
+  <wsdl:message name="getSubscriptionUnitPriceResponse">
+    <wsdl:part name="orderServiceGetSubscriptionUnitPriceResponse" element="cm:orderServiceGetSubscriptionUnitPriceResponse" />
+  </wsdl:message>
+  <wsdl:message name="getOrgVendorSubscriptionsRequest">
+    <wsdl:part name="orderServiceGetOrgVendorSubscriptionsRequest" element="cm:orderServiceGetOrgVendorSubscriptionsRequest" />
+  </wsdl:message>
+  <wsdl:message name="getOrgVendorSubscriptionsResponse">
+    <wsdl:part name="orderServiceGetOrgVendorSubscriptionsResponse" element="cm:orderServiceGetOrgVendorSubscriptionsResponse" />
+  </wsdl:message>
+  <wsdl:message name="getOrgVendLatestPayMethodRequest">
+    <wsdl:part name="orderServiceGetLatestPayMethodRequest" element="cm:orderServiceGetLatestPayMethodRequest" />
+  </wsdl:message>
+  <wsdl:message name="getOrgVendLatestPayMethodResponse">
+    <wsdl:part name="orderServiceGetLatestPayMethodResponse" element="cm:orderServiceGetLatestPayMethodResponse" />
+  </wsdl:message>
+  <wsdl:message name="getAdobeExpressActiveLicRequest">
+    <wsdl:part name="orderServiceGetAdobeExpressActiveLicRequest" element="cm:orderServiceGetAdobeExpressActiveLicRequest" />
+  </wsdl:message>
+  <wsdl:message name="getAdobeExpressActiveLicResponse">
+    <wsdl:part name="orderServiceGetAdobeExpressActiveLicResponse" element="cm:orderServiceGetAdobeExpressActiveLicResponse" />
+  </wsdl:message>
+  <wsdl:message name="isAdobeExpressEmailActiveRequest">
+    <wsdl:part name="orderServiceIsAdobeExpressEmailActiveRequest" element="cm:orderServiceIsAdobeExpressEmailActiveRequest" />
+  </wsdl:message>
+  <wsdl:message name="isAdobeExpressEmailActiveResponse">
+    <wsdl:part name="orderServiceIsAdobeExpressEmailActiveResponse" element="cm:orderServiceIsAdobeExpressEmailActiveResponse" />
+  </wsdl:message>
+  <wsdl:message name="saveAdobeExpressEmailRequest">
+    <wsdl:part name="orderServiceSaveAdobeExpressEmailRequest" element="cm:orderServiceSaveAdobeExpressEmailRequest" />
+  </wsdl:message>
+  <wsdl:message name="saveAdobeExpressEmailResponse">
+    <wsdl:part name="orderServiceSaveAdobeExpressEmailResponse" element="cm:orderServiceSaveAdobeExpressEmailResponse" />
+  </wsdl:message>
+  <wsdl:message name="saveOrgResellerOrderRequest">
+    <wsdl:part name="orderServiceSaveOrgResellerOrderRequest" element="cm:orderServiceSaveOrgResellerOrderRequest" />
+  </wsdl:message>
+  <wsdl:message name="saveOrgResellerOrderResponse">
+    <wsdl:part name="orderServiceSaveOrgResellerOrderResponse" element="cm:orderServiceSaveOrgResellerOrderResponse" />
+  </wsdl:message>
+  <wsdl:message name="saveOrderReferenceRequest">
+    <wsdl:part name="orderServiceSaveOrderReferenceRequest" element="cm:orderServiceSaveOrderReferenceRequest" />
+  </wsdl:message>
+  <wsdl:message name="saveOrderReferenceResponse">
+    <wsdl:part name="orderServiceSaveOrderReferenceResponse" element="cm:orderServiceSaveOrderReferenceResponse" />
+  </wsdl:message>
+  <wsdl:message name="updateOrgQualRequest">
+    <wsdl:part name="orderServiceUpdateOrgQualRequest" element="cm:orderServiceUpdateOrgQualRequest" />
+  </wsdl:message>
+  <wsdl:message name="updateOrgQualResponse">
+    <wsdl:part name="orderServiceUpdateOrgQualResponse" element="cm:orderServiceUpdateOrgQualResponse" />
+  </wsdl:message>
+  <wsdl:portType name="orderService">
+    <wsdl:operation name="create">
+      <wsdl:input message="cm:orderCreateRequest" />
+      <wsdl:output message="cm:orderCreateResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="status">
+      <wsdl:input message="cm:orderStatusRequest" />
+      <wsdl:output message="cm:orderStatusResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="cancel">
+      <wsdl:input message="cm:orderCancelRequest" />
+      <wsdl:output message="cm:orderCancelResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="updateAuth">
+      <wsdl:input message="cm:updateAuthRequest" />
+      <wsdl:output message="cm:updateAuthResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getUserOrders">
+      <wsdl:input message="cm:getUserOrdersRequest" />
+      <wsdl:output message="cm:getUserOrdersResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getVendorOrderHistory">
+      <wsdl:input message="cm:getVendorOrderHistoryRequest" />
+      <wsdl:output message="cm:getVendorOrderHistoryResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="calculateTax">
+      <wsdl:input message="cm:calculateTaxRequest" />
+      <wsdl:output message="cm:calculateTaxResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getOrgSubscriptions">
+      <wsdl:input message="cm:getOrgSubscriptionsRequest" />
+      <wsdl:output message="cm:getOrgSubscriptionsResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="updatePayment">
+      <wsdl:input message="cm:updatePaymentRequest" />
+      <wsdl:output message="cm:updatePaymentResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="blockFulfillment">
+      <wsdl:input message="cm:blockFulfillmentRequest" />
+      <wsdl:output message="cm:blockFulfillmentResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="isSubscriptionProducts">
+      <wsdl:input message="cm:isSubscriptionProductsRequest" />
+      <wsdl:output message="cm:isSubscriptionProductsResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="isMSDiscounted">
+      <wsdl:input message="cm:isMSDiscountedRequest" />
+      <wsdl:output message="cm:isMSDiscountedResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getBoostInfo">
+      <wsdl:input message="cm:getBoostInfoRequest" />
+      <wsdl:output message="cm:getBoostInfoResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="orgSubscriptionsCheck">
+      <wsdl:input message="cm:orgSubscriptionsCheckRequest" />
+      <wsdl:output message="cm:orgSubscriptionsCheckResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getCiscoEPDPOrder">
+      <wsdl:input message="cm:getCiscoEPDPOrderRequest" />
+      <wsdl:output message="cm:getCiscoEPDPOrderResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="addPayment">
+      <wsdl:input message="cm:addPaymentRequest" />
+      <wsdl:output message="cm:addPaymentResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="achPaymentStatus">
+      <wsdl:input message="cm:achPaymentStatusRequest" />
+      <wsdl:output message="cm:achPaymentStatusResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="saveAgreementNumber">
+      <wsdl:input message="cm:saveAgreementNumberRequest" />
+      <wsdl:output message="cm:saveAgreementNumberResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="unityOrgTitleIntendToUse">
+      <wsdl:input message="cm:unityOrgTitleIntendToUseRequest" />
+      <wsdl:output message="cm:unityOrgTitleIntendToUseResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getSubscriptionUnitPrice">
+      <wsdl:input message="cm:getSubscriptionUnitPriceRequest" />
+      <wsdl:output message="cm:getSubscriptionUnitPriceResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getOrgVendorSubscriptions">
+      <wsdl:input message="cm:getOrgVendorSubscriptionsRequest" />
+      <wsdl:output message="cm:getOrgVendorSubscriptionsResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getOrgVendLatestPayMethod">
+      <wsdl:input message="cm:getOrgVendLatestPayMethodRequest" />
+      <wsdl:output message="cm:getOrgVendLatestPayMethodResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="getAdobeExpressActiveLic">
+      <wsdl:input message="cm:getAdobeExpressActiveLicRequest" />
+      <wsdl:output message="cm:getAdobeExpressActiveLicResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="isAdobeExpressEmailActive">
+      <wsdl:input message="cm:isAdobeExpressEmailActiveRequest" />
+      <wsdl:output message="cm:isAdobeExpressEmailActiveResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="saveAdobeExpressEmail">
+      <wsdl:input message="cm:saveAdobeExpressEmailRequest" />
+      <wsdl:output message="cm:saveAdobeExpressEmailResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="saveOrgResellerOrder">
+      <wsdl:input message="cm:saveOrgResellerOrderRequest" />
+      <wsdl:output message="cm:saveOrgResellerOrderResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="saveOrderReference">
+      <wsdl:input message="cm:saveOrderReferenceRequest" />
+      <wsdl:output message="cm:saveOrderReferenceResponse" />
+    </wsdl:operation>
+    <wsdl:operation name="updateOrgQual">
+      <wsdl:input message="cm:updateOrgQualRequest" />
+      <wsdl:output message="cm:updateOrgQualResponse" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="orderService" type="cm:orderService">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="create">
+      <soap:operation soapAction="http://compumentor.org/orderservice/create" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="status">
+      <soap:operation soapAction="http://compumentor.org/orderservice/status" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="cancel">
+      <soap:operation soapAction="http://compumentor.org/orderservice/cancel" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="updateAuth">
+      <soap:operation soapAction="http://compumentor.org/orderservice/updateAuth" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getUserOrders">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getUserOrders" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getVendorOrderHistory">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getVendorOrderHistory" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="calculateTax">
+      <soap:operation soapAction="http://compumentor.org/orderservice/calculateTax" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getOrgSubscriptions">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getOrgSubscriptions" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="updatePayment">
+      <soap:operation soapAction="http://compumentor.org/orderservice/updatePayment" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="blockFulfillment">
+      <soap:operation soapAction="http://compumentor.org/orderservice/blockFulfillment" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="isSubscriptionProducts">
+      <soap:operation soapAction="http://compumentor.org/orderservice/isSubscriptionProducts" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="isMSDiscounted">
+      <soap:operation soapAction="http://compumentor.org/orderservice/isMSDiscounted" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getBoostInfo">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getBoostInfo" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="orgSubscriptionsCheck">
+      <soap:operation soapAction="http://compumentor.org/orderservice/orgSubscriptionsCheck" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getCiscoEPDPOrder">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getCiscoEPDPOrder" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="addPayment">
+      <soap:operation soapAction="http://compumentor.org/orderservice/addPayment" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="achPaymentStatus">
+      <soap:operation soapAction="http://compumentor.org/orderservice/achPaymentStatus" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="saveAgreementNumber">
+      <soap:operation soapAction="http://compumentor.org/orderservice/saveAgreementNumber" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="unityOrgTitleIntendToUse">
+      <soap:operation soapAction="http://compumentor.org/orderservice/unityOrgTitleIntendToUse" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getSubscriptionUnitPrice">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getSubscriptionUnitPrice" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getOrgVendorSubscriptions">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getOrgVendorSubscriptions" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getOrgVendLatestPayMethod">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getOrgVendLatestPayMethod" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="getAdobeExpressActiveLic">
+      <soap:operation soapAction="http://compumentor.org/orderservice/getAdobeExpressActiveLic" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="isAdobeExpressEmailActive">
+      <soap:operation soapAction="http://compumentor.org/orderservice/isAdobeExpressEmailActive" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="saveAdobeExpressEmail">
+      <soap:operation soapAction="http://compumentor.org/orderservice/saveAdobeExpressEmail" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="saveOrgResellerOrder">
+      <soap:operation soapAction="http://compumentor.org/orderservice/saveOrgResellerOrder" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="saveOrderReference">
+      <soap:operation soapAction="http://compumentor.org/orderservice/saveOrderReference" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="updateOrgQual">
+      <soap:operation soapAction="http://compumentor.org/orderservice/updateOrgQual" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="orderService">
+    <wsdl:port name="orderService" binding="cm:orderService">
+      <soap:address location="https://localhost:8243/services/TSGOrderServiceEBS_V4" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

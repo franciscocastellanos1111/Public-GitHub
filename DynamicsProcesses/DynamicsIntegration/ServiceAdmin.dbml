@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="ServiceAdmin" Class="ServiceAdminDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=strptdb2k14.stage.compumentor.org;Initial Catalog=ServiceAdmin;Integrated Security=True;Encrypt=False" SettingsObjectName="DynamicsProcesses.Properties.Settings" SettingsPropertyName="ServiceAdminConnectionString1" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.SalesOrderReference" Member="SalesOrderReferences">
+    <Type Name="SalesOrderReference">
+      <Column Name="ID" Type="System.Int32" DbType="Int NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="OrderNumber" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="ReferenceType" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="ReferenceValue" Type="System.String" DbType="NVarChar(500)" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.ReferenceValues" Member="ReferenceValues">
+    <Type Name="ReferenceValue">
+      <Column Name="ReferenceId" Type="System.String" DbType="Char(38) NOT NULL" IsPrimaryKey="true" CanBeNull="false" />
+      <Column Name="InsertedBy" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="InsertedDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="UpdatedBy" Type="System.String" DbType="VarChar(50) NOT NULL" CanBeNull="false" />
+      <Column Name="UpdatedDate" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="ReferenceGroup" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="ReferenceType" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="ReferenceName" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="ReferenceValue" Member="ReferenceValue1" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Function Name="dbo.usp_getOrgsFlaggedFraudReview" Method="usp_getOrgsFlaggedFraudReview">
+    <Parameter Name="date" Type="System.DateTime" DbType="DateTime" />
+    <ElementType Name="usp_getOrgsFlaggedFraudReviewResult">
+      <Column Name="note_id" Type="System.Guid" DbType="UniqueIdentifier NOT NULL" CanBeNull="false" />
+      <Column Name="site_id" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="secondary_id" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="identity_id" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="owner_id" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="owner_type_enum" Type="System.Int32" DbType="Int NOT NULL" CanBeNull="false" />
+      <Column Name="note_desc" Type="System.String" DbType="NVarChar(255)" CanBeNull="true" />
+      <Column Name="text" Type="System.String" DbType="NText" CanBeNull="true" UpdateCheck="Never" />
+      <Column Name="read_only_access" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="private_access" Type="System.Boolean" DbType="Bit NOT NULL" CanBeNull="false" />
+      <Column Name="insert_by" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="insert_date" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="update_by" Type="System.String" DbType="NChar(10) NOT NULL" CanBeNull="false" />
+      <Column Name="update_date" Type="System.DateTime" DbType="DateTime NOT NULL" CanBeNull="false" />
+      <Column Name="delete_status" Type="System.Byte" DbType="TinyInt NOT NULL" CanBeNull="false" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_findOrgMatches" Method="usp_findOrgMatches">
+    <Parameter Name="tsOrgId" Type="System.Int32" DbType="Int" />
+    <ElementType Name="usp_findOrgMatchesResult">
+      <Column Name="orgMatches" Type="System.String" DbType="VarChar(4000)" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_orgsWithOrders" Method="usp_orgsWithOrders">
+    <Parameter Name="tsOrgIds" Type="System.String" DbType="VarChar(MAX)" />
+    <ElementType Name="usp_orgsWithOrdersResult">
+      <Column Name="tsOrgId" Type="System.String" DbType="VarChar(MAX)" CanBeNull="true" />
+      <Column Name="hasOrders" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+    </ElementType>
+  </Function>
+  <Function Name="dbo.usp_getOrgOrderElig_newAC" Method="usp_getOrgOrderElig_newAC">
+    <Parameter Name="tsOrgId" Type="System.Int32" DbType="Int" />
+    <Parameter Name="alternateActivityCode" Type="System.String" DbType="VarChar(30)" />
+    <ElementType Name="usp_getOrgOrderElig_newACResult">
+      <Column Name="isActivityCodeElig" Type="System.Boolean" DbType="Bit" CanBeNull="true" />
+    </ElementType>
+  </Function>
+</Database>

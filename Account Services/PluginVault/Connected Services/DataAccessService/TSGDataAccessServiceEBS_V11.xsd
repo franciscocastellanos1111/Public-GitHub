@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:dbc="http://www.techsoupglobal.org/dbcalloutservice/" xmlns:tsg="http://techsoupglobal.org/DataAccessService/" attributeFormDefault="unqualified" elementFormDefault="unqualified" targetNamespace="http://techsoupglobal.org/DataAccessService/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:import schemaLocation="TSGDataAccessServiceEBS_V1?xsd=xsd1.xsd" namespace="http://www.techsoupglobal.org/dbcalloutservice/" />
+  <xsd:element name="ExecuteStoredProcReturnRecordsetsRequest" type="tsg:ExecuteStoredProcRequestType" />
+  <xsd:complexType name="inputParamsType">
+    <xsd:sequence>
+      <xsd:any minOccurs="0" maxOccurs="unbounded" processContents="skip" />
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:element name="ExecuteStoredProcResponse" type="tsg:ExecuteStoredProcResponseType" />
+  <xsd:element name="ExecuteStoredProcReturnRecordsetsResponse">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="Service" type="xsd:string" />
+        <xsd:element name="Operation" type="xsd:string" />
+        <xsd:element name="ResultStatus" type="xsd:string" />
+        <xsd:element minOccurs="0" name="ReturnXML" type="dbc:ArrayOfRecordsetType" />
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:element name="ExecuteStoredProcRequest" type="tsg:ExecuteStoredProcRequestType" />
+  <xsd:complexType name="ExecuteStoredProcRequestType">
+    <xsd:sequence>
+      <xsd:element name="ServerName" type="xsd:string" />
+      <xsd:element name="DBName" type="xsd:string" />
+      <xsd:element name="SPName" type="xsd:string" />
+      <xsd:element minOccurs="0" name="params" type="tsg:inputParamsType" />
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="ExecuteStoredProcWithRecordsetsReturnXMLType">
+    <xsd:sequence>
+      <xsd:element minOccurs="0" maxOccurs="unbounded" name="recordset" type="dbc:ArrayOfRecordsetType" />
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="ExecuteStoredProcResponseType">
+    <xsd:sequence>
+      <xsd:element name="ServiceName" type="xsd:string" />
+      <xsd:element name="ActionName" type="xsd:string" />
+      <xsd:element name="ResultStatus" type="xsd:string" />
+      <xsd:element name="ReturnXml" type="dbc:ArrayOfRowType" />
+    </xsd:sequence>
+  </xsd:complexType>
+  <xsd:complexType name="ExecuteStoredProcReturnXMLType">
+    <xsd:sequence>
+      <xsd:element minOccurs="0" maxOccurs="unbounded" name="Row" type="xsd:double" />
+    </xsd:sequence>
+  </xsd:complexType>
+</xsd:schema>
