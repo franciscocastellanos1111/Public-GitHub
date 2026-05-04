@@ -1,0 +1,60 @@
+
+### **10. Full Backward Compatibility ✅**
+- All existing `itemType`/`itemId` requests continue to work
+- File upload operations unchanged
+- Folder analysis operations unchanged
+- No breaking changes to current API consumers
+
+## 🔍 **API Usage Examples**
+
+### **Box Native Search**
+```json
+{
+  "requestCategory": "SearchService",
+  "requestType": "BoxNative",
+  "searchQuery": "meeting notes"
+}
+```
+
+### **Box AI Enhanced Search**
+```json
+{
+  "requestCategory": "SearchService", 
+  "requestType": "BoxAIEnhanced",
+  "searchQuery": "quarterly report 2025"
+}
+```
+
+### **Existing Operations (Unchanged)**
+```json
+{
+  "itemType": "Folder",
+  "itemId": "343434334"
+}
+```
+
+## 📊 **Sample Search Response**
+
+```json
+{
+  "success": true,
+  "message": "Box AI enhanced search completed. Found 3 results with AI insights.",
+  "searchQuery": "quarterly report 2025",
+  "searchType": "BoxAIEnhanced",
+  "totalSearchResults": 3,
+  "searchResults": [
+    {
+      "id": "file_123456789",              // 📁 PROMINENT BOX ID
+      "name": "Q1 2025 Financial Report.pdf",
+      "type": "file",
+      "size": 2048576,
+      "createdAt": "2025-01-15T10:30:00.000Z",
+      "modifiedAt": "2025-08-20T14:25:00.000Z",
+      "contentType": "application/pdf",
+      "parentFolder": "Financial Reports",
+      "path": "/Company/Finance/2025/Q1",
+      "relevanceScore": 95.5,
+      "aiInsights": "PDF document - recently modified, likely contains current quarterly information"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>5585aea7-fb47-492d-a54f-788562ccdbf0</ProjectGuid>
+    <ProjectTypeGuids>{88A30576-7583-4F75-8136-5EFD2C14ADFF}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>SlnCrmPackage</RootNamespace>
+    <AssemblyName>SlnCrmPackage</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <OutputFile>SlnCrmPackage.zip</OutputFile>
+    <Name>SlnCrmPackage</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <RegisterPlugin Include="RegisterFile.crmregister">
+      <DisplayName>RegisterFile</DisplayName>
+      <UniqueName>new_RegisterFile</UniqueName>
+      <WebResourceType>NotSupported</WebResourceType>
+    </RegisterPlugin>
+    <Folder Include="WebResources" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PluginVault\EDServices.csproj">
+      <Name>EDServices</Name>
+      <Project>{ce2fdba4-1671-4f23-8b11-20589dcd2e9d}</Project>
+      <Private>True</Private>
+      <SilverlightApplication>False</SilverlightApplication>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!--<Import Project="$(MSBuildExtensionsPath32)\Microsoft\CRM\Microsoft.CrmDeveloperTools.12.targets" />-->
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+			 Other similar extension points exist, see Microsoft.Common.targets.
+	<Target Name="BeforeBuild">
+	</Target>
+	<Target Name="AfterBuild">
+	</Target>
+	-->
+</Project>

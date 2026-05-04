@@ -1,0 +1,29 @@
+<Project>
+  <PropertyGroup>
+    <!-- Global build properties -->
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <WarningLevel>4</WarningLevel>
+    
+    <!-- Package generation properties -->
+    <GeneratePackageOnBuild Condition=" '$(Configuration)' == 'Release' ">true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    
+    <!-- Plugin-specific properties -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    
+    <!-- Dependency resolution -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+  </PropertyGroup>
+  
+  <!-- Assembly binding redirects for common conflicts -->
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+</Project>
