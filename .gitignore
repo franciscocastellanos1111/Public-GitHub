@@ -13,3 +13,18 @@ obj/
 
 # NuGet packages (can be restored)
 packages/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+*.egg-info/
+
+# Azure Functions local
+local.settings.json
+__azurite_db*__.json
+__blobstorage__/
+__queuestorage__/

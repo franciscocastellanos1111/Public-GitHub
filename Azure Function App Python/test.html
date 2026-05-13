@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test RouteToDynamics API</title>
+</head>
+<body>
+    <h1>Test RouteToDynamics Function</h1>
+    <button onclick="testAPI()">Test GetOrgData API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const url = 'http://localhost:7073/api/CRM/GetOrgData';
+            const data = {
+                TSOrgId: "381655"
+            };
+            
+            document.getElementById('result').innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const statusText = `Status: ${response.status} ${response.statusText}`;
+                const responseText = await response.text();
+                
+                document.getElementById('result').innerHTML = `
+                    <h3>${statusText}</h3>
+                    <pre>${responseText}</pre>
+                `;
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <h3>Error:</h3>
+                    <pre>${error.message}</pre>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

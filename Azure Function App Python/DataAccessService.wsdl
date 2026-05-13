@@ -1,0 +1,62 @@
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tsg="http://techsoupglobal.org/DataAccessService/" xmlns:dbc="http://www.techsoupglobal.org/dbcalloutservice/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" name="DataAccessService" targetNamespace="http://techsoupglobal.org/DataAccessService/">
+	<wsdl:types>
+		<schema xmlns="http://www.w3.org/2001/XMLSchema">
+			<import namespace="http://techsoupglobal.org/DataAccessService/" schemaLocation="https://esbdevca.techsoup.org:8243/services/TSGDataAccessServiceEBS_V1?xsd=xsd0.xsd"/>
+		</schema>
+	</wsdl:types>
+	<wsdl:message name="ExecuteStoredProcRequest">
+		<wsdl:part name="ExecuteStoredProcRequest" element="tsg:ExecuteStoredProcRequest">
+    </wsdl:part>
+	</wsdl:message>
+	<wsdl:message name="ExecuteStoredProcResponse">
+		<wsdl:part name="ExecuteStoredProcResponse" element="tsg:ExecuteStoredProcResponse">
+    </wsdl:part>
+	</wsdl:message>
+	<wsdl:message name="ExecuteStoredProcReturnRecordsetsResponse">
+		<wsdl:part name="ExecuteStoredProcReturnRecordsetsResponse" element="tsg:ExecuteStoredProcReturnRecordsetsResponse"/>
+	</wsdl:message>
+	<wsdl:message name="ExecuteStoredProcWithRecordsetsRequest">
+		<wsdl:part name="ExecuteStoredProcReturnRecordsetsRequest" element="tsg:ExecuteStoredProcReturnRecordsetsRequest">
+    </wsdl:part>
+	</wsdl:message>
+	<wsdl:portType name="DataAccessService">
+		<wsdl:operation name="ExecuteStoredProc">
+			<wsdl:input name="executeStoredProcRequest" message="tsg:ExecuteStoredProcRequest">
+      </wsdl:input>
+			<wsdl:output name="executeStoredProcResponse" message="tsg:ExecuteStoredProcResponse">
+      </wsdl:output>
+		</wsdl:operation>
+		<wsdl:operation name="ExecuteStoredProcReturnRecordsets">
+			<wsdl:input name="executeStoredProcWithRecordsetRequest" message="tsg:ExecuteStoredProcWithRecordsetsRequest">
+      </wsdl:input>
+			<wsdl:output name="executeReturnRecordsetsResponse" message="tsg:ExecuteStoredProcReturnRecordsetsResponse">
+      </wsdl:output>
+		</wsdl:operation>
+	</wsdl:portType>
+	<wsdl:binding name="DataAccessServiceBinding" type="tsg:DataAccessService">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<wsdl:operation name="ExecuteStoredProc">
+			<soap:operation soapAction="http://techsoupglobal.org/DataAccessService/ExecuteStoredProc"/>
+			<wsdl:input name="executeStoredProcRequest">
+				<soap:body use="literal"/>
+			</wsdl:input>
+			<wsdl:output name="executeStoredProcResponse">
+				<soap:body use="literal"/>
+			</wsdl:output>
+		</wsdl:operation>
+		<wsdl:operation name="ExecuteStoredProcReturnRecordsets">
+			<soap:operation soapAction="http://techsoupglobal.org/DataAccessService/ExecuteStoredProcReturnRecordsets"/>
+			<wsdl:input name="executeStoredProcWithRecordsetRequest">
+				<soap:body use="literal"/>
+			</wsdl:input>
+			<wsdl:output name="executeReturnRecordsetsResponse">
+				<soap:body use="literal"/>
+			</wsdl:output>
+		</wsdl:operation>
+	</wsdl:binding>
+	<wsdl:service name="DataAccessService">
+		<wsdl:port name="DataAccessServicePort" binding="tsg:DataAccessServiceBinding">
+			<soap:address location="https://localhost:8243/services/TSGDataAccessServiceEBS_V1"/>
+		</wsdl:port>
+	</wsdl:service>
+</wsdl:definitions>
