@@ -31,6 +31,7 @@ using System.Web.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Web.Util;
 using System.Security.Policy;
+using Microsoft.Xrm.Sdk.Metadata;
 
 namespace DynamicsProcesses
 {
@@ -39,7 +40,32 @@ namespace DynamicsProcesses
         public static DispositionRequest DispositionClass = new DispositionRequest();
         public static RegistrationIdentifier RegIdentifierClass = new RegistrationIdentifier();
 
+        public static Dictionary<string, string> QualStatus = new Dictionary<string, string>
+                {
+                    {"1", "qualified"},
+                    {"3", "requalification pending"},
+                    {"4", "qualification pending"},
+                    {"5", "disqualified"},
+                    {"13", "canceled"},
+                    {"14", "abandoned"},
+                    {"15", "expired"},
+                    {"23", "irs disqualified"},
+                    {"26", "unresponsive"},
+                    {"qualified", "1"},
+                    {"requalification pending", "3"},
+                    {"qualification pending", "4"},
+                    {"disqualified", "5"},
+                    {"canceled", "13"},
+                    {"abandoned", "14"},
+                    {"expired", "15"},
+                    {"irs disqualified", "23"},
+                    {"unresponsive", "26"}
+                };
 
+        
+        public static string CTPSessionKey = ConfigurationManager.AppSettings["CTPSessionKey"];
+
+        public static string AzureStorage7C = ConfigurationManager.AppSettings["AzureStorage7C"];
         public static Guid createCase(string title
                                         , int caseTypeCode
                                         , int? type
@@ -81,7 +107,9 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-
+                DynamicsInterface.writeToLog($"Error in createCase(). Exception message: {Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}{customerRef?.LogicalName ?? "null customer reference"} Id: {customerRef?.Id.ToString() ?? ""}"
+                                                );
 
             }
 
@@ -121,7 +149,7 @@ namespace DynamicsProcesses
                                                                 )
                                                                     .Result;
 
-
+                
 
                 string responseTxt = response.Content.ReadAsStringAsync().Result;
                 respDynObject = JsonConvert.DeserializeObject(responseTxt);
@@ -131,6 +159,9 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
+                DynamicsInterface.writeToLog($"Error in makeHttpGetCall(). Exception message: {Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}Endpoint: {baseUrl + endPointPath}"
+                                                );
             }
 
             return respDynObject;
@@ -196,10 +227,181 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-
+                DynamicsInterface.writeToLog($"Error in makeHttpPostCall(). Exception message: {Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}Endpoint: {baseUrl + endPointPath}{Environment.NewLine}requestJson:{Environment.NewLine}{requestJson}"
+                                                );
             }
 
             return respDynObject;
+        }
+
+        public static async Task<dynamic> makeHttpGetCall(
+                                               string baseUrl, string endPointPath
+                                               , Dictionary<string, string> queryParams
+                                               )
+        {
+            dynamic respDynObject = null;
+
+            try
+            {
+                HttpClient client = new HttpClient();
+                HttpRequestHeaders headers = client.DefaultRequestHeaders;
+                headers.Accept.Add(
+                    new MediaTypeWithQualityHeaderValue("application/json"));
+
+
+
+                string queryString = "";
+                if (queryParams != null && queryParams.Count > 0)
+                {
+                    queryString = string.Join("&", queryParams.Select(kvp => $"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value)}"));
+                    queryString = "?" + queryString;
+                }
+                string requestUrl = baseUrl + endPointPath + queryString;
+
+
+
+
+
+                HttpResponseMessage response = await client.GetAsync(
+                                                                requestUrl
+                                                                );
+
+
+
+                string responseTxt = await response.Content.ReadAsStringAsync();
+                respDynObject = JsonConvert.DeserializeObject(responseTxt);
+
+                client.Dispose();
+
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in async makeHttpGetCall(). Exception message: {Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}Endpoint: {baseUrl + endPointPath}"
+                                                );
+            }
+
+            return respDynObject;
+        }
+
+        public static async Task<dynamic> makeHttpPostCall(string requestJson
+                                                           , string baseUrl, string endPointPath
+                                                            , Dictionary<string, string> queryParams
+                                                            , Dictionary<string, string> extraHeaders = null
+                                                            )
+        {
+            try
+            {
+                #region Initialize HttpClient and Headers
+                dynamic respDynObject = null;
+
+                HttpClient client = new HttpClient();
+                HttpRequestHeaders headers = client.DefaultRequestHeaders;
+                headers.Accept.Add(
+                    new MediaTypeWithQualityHeaderValue("application/json"));
+
+                if (extraHeaders != null)
+                {
+                    foreach (KeyValuePair<string, string> header in extraHeaders)
+                    {
+                        headers.Add(header.Key, header.Value);
+                    }
+                }
+                #endregion
+
+
+                #region Set Base URL, Endpoint Path, Key, and Query Parameters
+                string queryString = "";
+                if (queryParams != null && queryParams.Count > 0)
+                {
+                    queryString = string.Join("&", queryParams.Select(kvp => $"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value)}"));
+                    queryString = "?" + queryString;
+                }
+                string requestUrl = baseUrl + endPointPath + queryString;
+                #endregion
+
+
+                #region Create Request Content & Send POST Request
+                StringContent contentRequest = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+                HttpResponseMessage response = await client.PostAsync(
+                                                                requestUrl
+                                                                , contentRequest
+                                                                 );
+                #endregion
+
+
+                #region Read Response & Return
+                string responseTxt = await response.Content.ReadAsStringAsync();
+
+                respDynObject = JsonConvert.DeserializeObject(responseTxt);
+                client.Dispose();
+                return respDynObject;
+                #endregion
+
+            }
+            #region Catch
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in async makeHttpPostCall(). Exception message: {Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}Endpoint: {baseUrl + endPointPath}{Environment.NewLine}requestJson:{Environment.NewLine}{requestJson}"
+                                                );
+                return null;
+            }
+            #endregion
+
+        }
+
+
+
+        public static async Task initiateNonprofitVerificationAgent(string caseIdText)
+        {
+            try
+            {
+
+                if (DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] != "prod")
+                    return;
+
+
+                DynamicsInterface.writeToLog($"Entering initiateNonprofitVerificationAgent with caseId: {caseIdText}"
+                                                );
+
+
+
+                dynamic request = new JObject();
+                request.caseId = caseIdText;
+                string requestJson = JsonConvert.SerializeObject(request);
+
+
+
+                string baseUrl = "https://techsoupservices.org";
+                string endPointPath = "/agent/nonprofit/verify-case-async/noauth";
+
+
+
+                dynamic response = await makeHttpPostCall(
+                                                            requestJson: requestJson
+                                                            , baseUrl: baseUrl
+                                                            , endPointPath: endPointPath
+                                                            , queryParams: null
+                                                            );
+
+
+                string responseText = JsonConvert.SerializeObject(response, Newtonsoft.Json.Formatting.Indented);
+
+
+                DynamicsInterface.writeToLog($"initiateNonprofitVerificationAgent(). Response from agent call:{Environment.NewLine}{responseText}"
+                                                                                                                                );
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in initiateNonprofitVerificationAgent(). Exception message:{Environment.NewLine}{e.Message}"
+                                                                                                                            );
+
+            }
+
+
         }
         public static void processSystemNote(string noteTitle, string noteDesc, EntityReference annotationParentRef)
         {
@@ -223,7 +425,7 @@ namespace DynamicsProcesses
                 {
                     annotation = new Entity("annotation");
                     annotation["subject"] = noteTitle;
-                    annotation["objectid"] = new EntityReference("incident", annotationParentRef.Id);
+                    annotation["objectid"] = annotationParentRef;
                 }
 
                 var noteDirectives = new System.Dynamic.ExpandoObject() as IDictionary<string, Object>;
@@ -257,8 +459,14 @@ namespace DynamicsProcesses
             try
             {
 
-                string CTPUrl = "https://tsvc.tsgctp.org/";
-                string CTPSessionKey = "61695af7-1652-4b08-b786-192de1884f61";
+                int maxDispositionRetrievalAttempts = DynamicsProcessesValidationServices.ConfigParams.maxDispositionRetrievalAttempts;
+                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postNoAutoCloseQueue;
+                bool autoCloseEnabled = DynamicsProcessesValidationServices.ConfigParams.autoCloseEnabled;
+
+
+                string ctpUrl = "https://tsvc.tsgctp.org/";
+                string ctpSessionKey = CTPSessionKey;
+                    //"61695af7-1652-4b08-b786-192de1884f61";
                 string endPointPath = "services/vsscorematrix/v_001/";
 
                 Dictionary<string, string> queryParams = new Dictionary<string, string>();
@@ -266,23 +474,13 @@ namespace DynamicsProcesses
 
 
                 dynamic dispositionResponse = ValidationServicesHelper.makeHttpGetCall(
-                                                                                        CTPUrl, endPointPath
-                                                                                        , CTPSessionKey, queryParams
+                                                                                        ctpUrl, endPointPath
+                                                                                        , ctpSessionKey, queryParams
                                                                                         );
 
 
 
                 string dispositionResponseText = JsonConvert.SerializeObject(dispositionResponse);
-                dynamic automatedValSettings = getAutomatedValidationConfig();
-
-                dynamic automatedValDefinition = JsonConvert.DeserializeObject(automatedValSettings.automatedValConfigText);
-
-
-
-
-
-
-
 
 
 
@@ -305,14 +503,6 @@ namespace DynamicsProcesses
 
 
 
-
-
-
-
-
-
-
-
                 /**Disposition Details**/
 
                 var scoreMatrixObj = JsonConvert.DeserializeObject<System.Dynamic.ExpandoObject>(dispositionResponseText) as IDictionary<string, Object>;
@@ -325,19 +515,7 @@ namespace DynamicsProcesses
 
 
 
-
-                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postNoAutoCloseQueue;
-
                 
-
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                   Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                   caseEntity.GetAttributeValue<string>("ts_validationrequestaddresscountryid")?.ToLower()?.Replace("gb", "uk")
-                                                                                                   )?.FirstOrDefault();
-
-                postNoAutoCloseQueue = countryAutomatedValDefinition?.postNoAutoCloseQueue ?? postNoAutoCloseQueue;
-
-
 
 
 
@@ -348,20 +526,18 @@ namespace DynamicsProcesses
                 string noteTitle = "";
                 if (dispositionStatus != "completed")
                 {
-                    int checkCountsForManagedQueue = automatedValDefinition.config.checkCountsForManagedQueue;
-
                     caseEntity["ts_validationrequestlaststatuscheck"] = DateTime.UtcNow;
                     int dispositionRequestChecksCount = caseEntity.GetAttributeValue<int>("ts_validationstatuscheckscount");
                     dispositionRequestChecksCount++;
                     caseEntity["ts_validationstatuscheckscount"] = dispositionRequestChecksCount;
 
-                    if (dispositionRequestChecksCount >= checkCountsForManagedQueue)
+                    if (dispositionRequestChecksCount >= maxDispositionRetrievalAttempts)
                     {
                         caseEntity["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
                         //DynamicsInterface.DataverseClient.Update(caseEntity);
                         DynamicsProcessesHelper.addCaseToQueue(caseEntity.Id, postNoAutoCloseQueue);
 
-                        processSystemNote("No Disposition Received",  "There was no validation resolution after the conclusion of the time allotted for this process", new EntityReference(caseEntity.LogicalName, caseEntity.Id));
+                        processSystemNote("No Disposition Received",  "No Disposition was received after the conclusion of the time allotted for this process", new EntityReference(caseEntity.LogicalName, caseEntity.Id));
                     }
                     DynamicsInterface.DataverseClient.Update(caseEntity);
                     return;
@@ -549,7 +725,7 @@ namespace DynamicsProcesses
                 caseEntity["ts_validationdispositionrulesagentvalid"] = false;
                 caseEntity["ts_validationrequestagentverification"] = new OptionSetValue(0);
 
-                if (dispositionAgentValid && isAgentNameValid && agentOrgCommonDomain)
+                if (dispositionAgentValid && isAgentNameValid && agentOrgCommonDomain && autoCloseEnabled)
                 {
                     caseEntity["ts_validationdispositionrulesagentvalid"] = true;
                     caseEntity["ts_validationrequestagentverification"] = new OptionSetValue(1);
@@ -700,7 +876,7 @@ namespace DynamicsProcesses
 
 
                 /**Rules Evaluation**/
-                List<dynamic> autoCloseCustomeRules = ((JArray)automatedValDefinition.config.autoCloseCustomRules).ToList<dynamic>();
+                List<dynamic> autoCloseCustomeRules = ((JArray)DynamicsProcessesValidationServices.ConfigJson.config.autoCloseCustomRules).ToList<dynamic>();
 
                 bool isAgentValid = caseEntity.GetAttributeValue<bool>("ts_validationdispositionrulesagentvalid");
                 bool isTrustWorthy = caseEntity.GetAttributeValue<bool>("ts_validationdispositiontrustworthy");
@@ -816,31 +992,49 @@ namespace DynamicsProcesses
         }
 
 
-        public static string regexReplace(string pattern, string expresion, string replaceWith)
+        public static string regexReplace(string pattern, string expresion, string replaceWith, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
             string convExpresion = expresion;
 
-            Regex regexObj = new Regex(pattern);
-            convExpresion = regexObj.Replace(convExpresion, replaceWith);
+            Regex regexObj = new Regex(pattern, regexOptions);
+            convExpresion = regexObj.Replace(expresion, replaceWith);
 
             return convExpresion;
         }
 
-
-        public static string regexMatchValue(string pattern, string input, int startAt)
+        public static bool regexMatch(string pattern, string input, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regexObj = new Regex(@pattern);
+            Regex regex = new Regex(pattern, regexOptions);
+            return regex.IsMatch(input);
+        }
+
+        public static int regexMatchPos(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
+        {
+            Regex regexObj = new Regex(pattern, regexOptions);
+
+            Match match = regexObj.Match(input, startAt);
+
+            return match.Index;
+        }
+
+        public static string regexMatchValue(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
+        {
+            Regex regexObj = new Regex(pattern, regexOptions);
 
             Match match = regexObj.Match(input, startAt);
 
             return match.Value;
         }
 
-        public static bool regexMatch(string pattern, string input)
+        public static bool regexMatchSuccess(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regex = new Regex(@pattern);
-            return regex.IsMatch(input);
+            Regex regexObj = new Regex(pattern, regexOptions);
+
+            Match match = regexObj.Match(input, startAt);
+
+            return match.Success;
         }
+
 
 
         public static dynamic getAutomatedValidationConfig()
@@ -999,14 +1193,14 @@ namespace DynamicsProcesses
             }
         }
 
-        public static Entity processQualCaseFromValidationRequest(Entity account, Entity validationRequestCase)
+        public static Entity processQualCaseFromValidationRequest(Entity orgAccount, Entity validationRequestCase)
         {
-            //Do update for qual case; mupdate qual code
+            
             Entity qualCase = null;
             try
             {
                 #region Check If Qual Case Already Exists
-                EntityReference orgDesigRef = account.GetAttributeValue<EntityReference>("new_orgdesignation");
+                EntityReference orgDesigRef = orgAccount.GetAttributeValue<EntityReference>("new_orgdesignation");
                 Guid orgDesigId = orgDesigRef == null ? Guid.Empty : orgDesigRef.Id;
 
                 if (orgDesigId == Guid.Empty)
@@ -1015,7 +1209,7 @@ namespace DynamicsProcesses
                 bool caseExists = false;
                 Guid caseId = Guid.Empty;
 
-                EntityReference vallReqParentCaseRef =   validationRequestCase.GetAttributeValue<EntityReference>("parentcaseid");
+                EntityReference vallReqParentCaseRef =  validationRequestCase.GetAttributeValue<EntityReference>("parentcaseid");
                 caseId = vallReqParentCaseRef == null ? Guid.Empty : vallReqParentCaseRef.Id;
 
                 if (caseId != Guid.Empty)
@@ -1027,7 +1221,7 @@ namespace DynamicsProcesses
                     queryQualCase.ColumnSet = new ColumnSet(true);
                     queryQualCase.Criteria.AddCondition("casetypecode", ConditionOperator.Equal, 2);
                     queryQualCase.Criteria.AddCondition("ts_qualificationcodeid", ConditionOperator.Equal, orgDesigId);
-                    queryQualCase.Criteria.AddCondition("customerid", ConditionOperator.Equal, account.Id);
+                    queryQualCase.Criteria.AddCondition("customerid", ConditionOperator.Equal, orgAccount.Id);
                     queryQualCase.AddOrder("createdon", OrderType.Descending);
                     queryQualCase.TopCount = 1;
                     EntityCollection qualCaseCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryQualCase);
@@ -1049,11 +1243,11 @@ namespace DynamicsProcesses
                 #region Transfer Values From Validation Request To Qual Case
                 EntityReference validationRequest = validationRequestCase.GetAttributeValue<EntityReference>("ts_qualificationcodeid");
 
-                Entity activityCodeEntity = account.GetAttributeValue<EntityReference>("new_activitycode") == null ? null
-                                                                                                    : DynamicsInterface.DataverseClient.Retrieve("new_activitycodes", account.GetAttributeValue<EntityReference>("new_activitycode").Id, new ColumnSet(true));
+                Entity activityCodeEntity = orgAccount.GetAttributeValue<EntityReference>("new_activitycode") == null ? null
+                                                                                                    : DynamicsInterface.DataverseClient.Retrieve("new_activitycodes", orgAccount.GetAttributeValue<EntityReference>("new_activitycode").Id, new ColumnSet(true));
 
-                Entity qualCodeEntity = account.GetAttributeValue<EntityReference>("new_orgdesignation") == null ? null
-                                                                                                    : DynamicsInterface.DataverseClient.Retrieve("new_qualificationcode", account.GetAttributeValue<EntityReference>("new_orgdesignation").Id, new ColumnSet(true));
+                Entity qualCodeEntity = orgAccount.GetAttributeValue<EntityReference>("new_orgdesignation") == null ? null
+                                                                                                    : DynamicsInterface.DataverseClient.Retrieve("new_qualificationcode", orgAccount.GetAttributeValue<EntityReference>("new_orgdesignation").Id, new ColumnSet(true));
 
                 string orgActivityCode = activityCodeEntity?.GetAttributeValue<string>("new_activitycode");
                 string qualCode = qualCodeEntity?.GetAttributeValue<string>("new_qualcode");
@@ -1068,7 +1262,8 @@ namespace DynamicsProcesses
 
                 CaseDefinition caseLogicalName = CaseDefinition.CreateInstance();
 
-                string title = qualCode + " - " + qualName;
+                string tsOrgId = orgAccount.GetAttributeValue<string>("accountnumber");
+                string title = $"{qualCode} - {qualName} - TSOrgId: {tsOrgId}";
                 qualCase[caseLogicalName.CaseTitle] = title;
                 qualCase[caseLogicalName.QualificationCodeId] = qualCodeRef;
 
@@ -1076,7 +1271,7 @@ namespace DynamicsProcesses
                 {
                     int caseTypeCode = 2;
                     int type = 101996;
-                    EntityReference customerRef = new EntityReference(account.LogicalName, account.Id);
+                    EntityReference customerRef = orgAccount.ToEntityReference();
 
                     qualCase[caseLogicalName.CaseCategory] = new OptionSetValue(caseTypeCode);
                     qualCase[caseLogicalName.Type] = new OptionSetValue(type);
@@ -1084,6 +1279,11 @@ namespace DynamicsProcesses
                 }
 
                 qualCase[caseLogicalName.CaseStatus] = validationRequestCase.GetAttributeValue<OptionSetValue>("ts_casestatus") ?? new OptionSetValue(102050); //102050 - 'OQ - Not Started'
+
+                int caseResolution = validationRequestCase.GetAttributeValue<OptionSetValue>("ts_caseresolution")?.Value ?? -1;
+
+                if (caseResolution == 3) //Fraud
+                    qualCase["ts_caseresolution"] = new OptionSetValue(3);
 
                 qualCase[caseLogicalName.ValidationRequestTransactionId] = "qualcase:" + validationRequestCase.GetAttributeValue<string>("ts_validationrequesttransactionid");
 
@@ -1258,8 +1458,8 @@ namespace DynamicsProcesses
             #region Catch
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in connectAgentToAccount(...). Exception message: " + Environment.NewLine + e.Message
-                                                   + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
+                DynamicsInterface.writeToLog($"Error in connectAgentToAccount(Guid accountId, Guid contactId). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}accountId: {accountId.ToString()}; contactId: {contactId.ToString()}"
                                                    );
                 return null;
             }
@@ -1273,13 +1473,16 @@ namespace DynamicsProcesses
 
 
 
-        public static IDictionary<string, Object> getAgentContact(Entity validationRequestCase, Entity orgAccount, string validationReqTransactionId, IDictionary<string, Object> dispositionRequest)
+        public static IDictionary<string, Object> getAgentContact(Entity validationRequestCase, Entity orgAccount, string validationReqTransactionId)
         {
             try
             {
                 string agentEmail = validationRequestCase.GetAttributeValue<string>("ts_validationagentemail");
                 IDictionary<string, Object> agentContact = new System.Dynamic.ExpandoObject() as IDictionary<string, Object>;
                 
+                if (string.IsNullOrWhiteSpace(agentEmail))
+                    return agentContact;
+
                 #region Find If Exists
                 QueryExpression queryContact = new QueryExpression("contact");
                 queryContact.ColumnSet = new ColumnSet(true);
@@ -1318,20 +1521,25 @@ namespace DynamicsProcesses
             #region Catch
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in getAgentContact(...). Exception message: " + Environment.NewLine + e.Message
-                                                   + Environment.NewLine + "Validation Request Transaction Id: " + validationRequestCase.GetAttributeValue<string>("ts_validationrequesttransactionid")
+                DynamicsInterface.writeToLog($"Error in getAgentContact(). Exception message:{Environment.NewLine}{e.Message}"
+                                                   + $"{Environment.NewLine}validationReqTransactionId: {validationReqTransactionId}"
                                                    );
                 return null;
+
+                
             }
             #endregion
         }
 
 
-        public static Entity createAgentContact(Entity validationRequestCase, Entity account, string validationReqTransactionId, string queueName)
+        public static Entity createAgentContact(Entity validationRequestCase, Entity validationRequestor, string validationReqTransactionId, string queueName)
         {
             try
             {
                 string agentEmail = validationRequestCase.GetAttributeValue<string>("ts_validationagentemail");
+
+                if (string.IsNullOrWhiteSpace(agentEmail))
+                    return null;
 
                 #region FindIfExists
                 QueryExpression queryContact = new QueryExpression("contact");
@@ -1368,14 +1576,71 @@ namespace DynamicsProcesses
             #region Catch
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in createAgentContact(...). Exception message: " + Environment.NewLine + e.Message
-                                                   + Environment.NewLine + "Validation Request Transaction Id: " + validationRequestCase.GetAttributeValue<string>("ts_validationrequesttransactionid")
+                DynamicsInterface.writeToLog($"Error in createAgentContact(Entity validationRequestCase). Exception message:{Environment.NewLine}{e.Message}"
+                                                   + $"{Environment.NewLine}validationReqTransactionId: {validationReqTransactionId}"
+                                                   );
+                return null;
+
+                
+            }
+            #endregion
+        }
+
+        public static async Task<Entity> createAgentContact(dynamic orgAgent, string validationReqTransactionId)
+        {
+            try
+            {
+                string agentEmail = orgAgent.email;
+
+                if (agentEmail == null)
+                    return null;
+
+                string firstName = orgAgent.firstName;
+                string lastname = orgAgent.lastName;
+
+                #region FindIfExists
+                QueryExpression queryContact = new QueryExpression("contact");
+                queryContact.ColumnSet = new ColumnSet(true);
+                queryContact.Criteria.AddCondition("emailaddress1", ConditionOperator.Equal, agentEmail);
+                EntityCollection contactCollection = await DynamicsInterface.DataverseClient.RetrieveMultipleAsync(queryContact);
+
+                if (contactCollection.Entities.Count > 0)
+                    return contactCollection.Entities.First();
+                #endregion
+
+                #region CreateContact
+                Entity contact = new Entity("contact");
+                contact["firstname"] = firstName;
+                contact["lastname"] = lastname;
+
+                contact["emailaddress1"] = agentEmail;
+                contact["ts_emailvalidationstatus"] = new OptionSetValue(4);
+
+                string tsContactId = DynamicsProcessesHelper.getNewTSOrgContactId();
+                contact["new_contactaccountnumber"] = tsContactId;
+                //contact["adx_identity_username"] = "agent." + tsContactId;
+
+                contact["new_source"] = new OptionSetValue(105000); //105000 - ValidationRequest
+
+                Guid contactId = await DynamicsInterface.DataverseClient.CreateAsync(contact);
+
+                contact = await DynamicsInterface.DataverseClient.RetrieveAsync(contact.LogicalName, contactId, new ColumnSet(true));
+
+
+                return contact;
+                #endregion
+            }
+            #region Catch
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in createAgentContact(orgAgent). Exception message:{Environment.NewLine}{e.Message}"
+                    + $"{Environment.NewLine}transactionId: {validationReqTransactionId}; agentEmail: {orgAgent.email ?? ""}"                                                   
                                                    );
                 return null;
             }
             #endregion
         }
-        public static Entity createOrgFromCase(Entity requestingAccount, Entity validationRequestCase, string validationReqTransactionId)
+        public static Entity createOrgFromCase(Entity validationRequestor, Entity validationRequestCase, string validationReqTransactionId)
         {
             #region Parameters
             Guid accountId = Guid.Empty;
@@ -1394,7 +1659,8 @@ namespace DynamicsProcesses
                 string orgRefId = DynamicsProcessesHelper.regexMatchValue(@"(?<=\w+_)(\d+)(?=_\w+$)", validationReqTransactionId, 0);
 
 
-                string tsPngoCode = requestingAccount?.GetAttributeValue<string>("ts_tspngocode");
+                string tsPngoCode = validationRequestor.GetAttributeValue<string>("ts_tspngocode");
+                string requestorName = validationRequestor.GetAttributeValue<string>("name");
 
                 string countryCode = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid") == null ? ""
                                                                                     : validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid").ToLower();
@@ -1402,7 +1668,7 @@ namespace DynamicsProcesses
                 if (countryCode != "us" && !string.IsNullOrEmpty(tsPngoCode) && !string.IsNullOrEmpty(orgRefId))
                 {
                     account["ts_pporgid"] = orgRefId;
-                    account["ts_orgppid"] = new EntityReference("account", requestingAccount.Id);
+                    account["ts_orgppid"] = validationRequestor.ToEntityReference();
                 }
                 #endregion
 
@@ -1410,7 +1676,30 @@ namespace DynamicsProcesses
                 #region Name, Org Designation, Mission Statement...
                 account["name"] = validationRequestCase.GetAttributeValue<string>("ts_validationrequestlegalname");
                 account["customertypecode"] = new OptionSetValue(3); //Customer
-                account["new_source"] = new OptionSetValue(101892); //TSS Web Site 101892
+
+
+
+                
+
+                dynamic optionValueResponse = null;
+                if (!string.IsNullOrEmpty(tsPngoCode))
+                    optionValueResponse = getOptionSetValue("new_tsgsource", "Partner Platform", false);
+                else
+                    optionValueResponse = getOptionSetValue("new_tsgsource", requestorName, false);
+
+                OptionSetValue orgSource = optionValueResponse?.optionValue != null ? new OptionSetValue((int)optionValueResponse.optionValue) : new OptionSetValue(101892);
+
+
+                string referralId = validationRequestCase.GetAttributeValue<string>("ts_validationrequestreferralid");
+
+                if (!string.IsNullOrEmpty(referralId) && regexMatch(@"^\d+$", referralId) && existsOptionSetValue("new_tsgsource", int.Parse(referralId)).Result)
+                    orgSource = new OptionSetValue(int.Parse(referralId));
+
+
+
+                account["new_source"] = orgSource;
+
+
 
                 EntityReference qualCodeRef = validationRequestCase.GetAttributeValue<EntityReference>("ts_qualificationcodeid");
                 account["new_orgdesignation"] = qualCodeRef;
@@ -1508,9 +1797,8 @@ namespace DynamicsProcesses
 
                 if (accountId == Guid.Empty)
                 {
-                    string error = "Error in createOrgFromCase(). Account was not created";
-
-                    DynamicsInterface.errorStack.Add(error);
+                    string error = $"Error in createOrgFromCase(). Account was not created. validationReqTransactionId: {validationReqTransactionId}";
+                    DynamicsInterface.writeToLog(error);
                     return null;
                 }
 
@@ -1524,13 +1812,13 @@ namespace DynamicsProcesses
             #region Catch
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in createOrgFromCase(string validationReqTransactionId). Exception message: " + Environment.NewLine + e.Message
-                                                  + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
+                DynamicsInterface.writeToLog($"Error in createOrgFromCase(). Exception message:{Environment.NewLine}{e.Message}"
+                                                        + $"{Environment.NewLine}validationReqTransactionId: {validationReqTransactionId}"
                                                   );
 
 
-                DynamicsProcessesHelper.processSystemNote(" --- Error Creating Org --- ", "Error in createOrgFromCase(string validationReqTransactionId). Exception message: " + Environment.NewLine + e.Message
-                                                                , new EntityReference(validationRequestCase.LogicalName, validationRequestCase.Id));
+                DynamicsProcessesHelper.processSystemNote(" --- Error Creating Org --- ", $"Error in createOrgFromCase(). Exception message:{Environment.NewLine}{e.Message}"
+                                                                , validationRequestCase.ToEntityReference());
 
 
             }
@@ -2138,126 +2426,60 @@ namespace DynamicsProcesses
 
         }
 
-        public static bool? evaluateForFraud(Entity validationRequestCase, Entity account, string validationReqTransactionId, string queueName, IDictionary<string, Object> dispositionRequest)
-        {
-            bool potentialFraud = false;
-            try
-            {
-                #region AutomatedValDefinition                
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                        Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                        validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid")?.ToLower()?.Replace("gb", "uk")
-                                                                                                        )?.FirstOrDefault();
+        
 
-                string requestingClientName = account.GetAttributeValue<string>("name");
-                dynamic customerAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.customers)?.ToList<dynamic>()?.
-                                                                                                                                                                                Where(customer => ((string)customer.name)?.ToLower() == requestingClientName.ToLower()
-                                                                                                                                                                                        )?.FirstOrDefault();
-                dynamic validationServicesCustomers = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.validationServicesCustomers;
-
-                string fraudReviewQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.fraudReviewQueue;
-                fraudReviewQueue = countryAutomatedValDefinition?.fraudReviewQueue ?? fraudReviewQueue;
-                fraudReviewQueue = customerAutomatedValDefinition == null ? fraudReviewQueue : (customerAutomatedValDefinition?.fraudReviewQueue ?? validationServicesCustomers?.fraudReviewQueue) ?? fraudReviewQueue;
-                #endregion
-
-                #region Parameters
-                //string postalCode = valReqOrgEntity.GetAttributeValue<string>("address1_postalcode");
-                //string name = valReqOrgEntity.GetAttributeValue<string>("name");
-                //string legalIdentifier = valReqOrgEntity.GetAttributeValue<string>("new_legalidentifier");
-                string url = validationRequestCase.GetAttributeValue<string>("ts_validationrequestwebsite") ?? "";
-
-                //string phone = valReqOrgEntity.GetAttributeValue<string>("telephone1");
-                //string countryCode = valReqOrgEntity.GetAttributeValue<string>("address1_country");
-                #endregion
-
-                #region Criteria For Fraud
-                if (url != null && url.ToLower().Contains("fraud"))
-                {
-                    DynamicsInterface.writeToLog("Fraud detected based on URL: " + url);
-
-
-
-                    potentialFraud = true;
-
-                    string dupesNoteDesc = "Initial check found strong indications of fraud";
-                    processSystemNote("Potential Fraud Identified", dupesNoteDesc, new EntityReference(validationRequestCase.LogicalName, validationRequestCase.Id));
-
-
-                    validationRequestCase["ts_casestatus"] = new OptionSetValue(104602); //OQ - Fraud Review	104602
-                    DynamicsInterface.DataverseClient.Update(validationRequestCase);
-
-
-
-
-
-                    if (!string.IsNullOrEmpty(fraudReviewQueue))
-                        DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, fraudReviewQueue);
-                }
-                
-                return potentialFraud;
-                #endregion
-            }
-            #region Catch
-            catch (Exception e)
-            {
-                DynamicsInterface.writeToLog("Error in evaluateForFraud(...). Exception message: " + Environment.NewLine + e.Message
-                                                + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
-                                                );
-                return null;
-            }
-            #endregion
-
-        }
-
-        public static bool processValidationRequestAccountFound(AccountMatch accountMatch, Entity validationRequestCase, Entity account, string validationReqTransactionId, string queueName, IDictionary<string, Object> dispositionRequest)
+        public static async Task<bool> processValidationRequestAccountFound(Entity matchingAccount, Entity validationRequestCase, Entity validationRequestor, string validationReqTransactionId
+                                                                                                                                                            , IDictionary<string, System.Object> response
+                                                                                                                                                            , IDictionary<string, Object> ctpOrgEntity = null)
         {
             bool success = true;
             try
             {
-                #region AutomatedValDefinition                
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                        Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                        validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid")?.ToLower()?.Replace("gb", "uk")
-                                                                                                        )?.FirstOrDefault();
+                #region AutomatedValDefinition
 
+                string duplicateReviewQueue = DynamicsProcessesValidationServices.ConfigParams.duplicateReviewQueue;
+                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postNoAutoCloseQueue;
+                string postAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postAutoCloseQueue;
 
-                string requestingClientName = account.GetAttributeValue<string>("name");
-                dynamic customerAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.customers)?.ToList<dynamic>()?.
-                                                                                                                                                                                Where(customer => ((string)customer.name)?.ToLower() == requestingClientName.ToLower()
-                                                                                                                                                                                        )?.FirstOrDefault();
-                dynamic validationServicesCustomers = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.validationServicesCustomers;
+                //dynamic customerAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.ConfigParams.customerDefinitionQueryResult)?.ToList<dynamic>()?.FirstOrDefault();
+                List<dynamic> targetedValidations = ((JArray)DynamicsProcessesValidationServices.ConfigParams.targetedValidations)?.ToList<dynamic>();
+                //((dynamic)((JObject)ConfigParams.customerAutomatedValDefinition))?.targetedValidations
 
-                string duplicateReviewQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.duplicateReviewQueue;
-                duplicateReviewQueue = countryAutomatedValDefinition?.duplicateReviewQueue ?? duplicateReviewQueue;
-                duplicateReviewQueue = customerAutomatedValDefinition == null ? duplicateReviewQueue : (customerAutomatedValDefinition?.duplicateReviewQueue ?? validationServicesCustomers?.duplicateReviewQueue) ?? duplicateReviewQueue;
-
-                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postNoAutoCloseQueue;
-                postNoAutoCloseQueue = countryAutomatedValDefinition?.postNoAutoCloseQueue ?? postNoAutoCloseQueue;
-                postNoAutoCloseQueue = customerAutomatedValDefinition == null ? postNoAutoCloseQueue : (customerAutomatedValDefinition?.postNoAutoCloseQueue ?? validationServicesCustomers?.postNoAutoCloseQueue) ?? postNoAutoCloseQueue;
-
-                string postAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postAutoCloseQueue;
-                postAutoCloseQueue = countryAutomatedValDefinition?.postAutoCloseQueue ?? postAutoCloseQueue;
-                postAutoCloseQueue = customerAutomatedValDefinition == null ? postAutoCloseQueue : (customerAutomatedValDefinition?.postAutoCloseQueue ?? validationServicesCustomers?.postAutoCloseQueue) ?? postAutoCloseQueue;
-
-                bool agentValidation = customerAutomatedValDefinition?.targetedValidations == null
-                    || ((JArray)customerAutomatedValDefinition.targetedValidations).ToList<dynamic>().Where(item => ((string)item)?.ToLower() == "agent")?.FirstOrDefault() != null;
+                bool agentValidation = targetedValidations == null
+                                                                || targetedValidations.Where(item => ((string)item)?.ToLower() == "agent")?.FirstOrDefault() != null;
                 #endregion
 
-                Entity matchingAccount = DynamicsInterface.DataverseClient.Retrieve("account", accountMatch.AccountId, new ColumnSet(true));
+                //Entity matchingAccount = DynamicsInterface.DataverseClient.Retrieve("account", accountMatch.AccountId, new ColumnSet(true));
 
                 #region HandlingAccountFound
 
-                Entity qualCase = DynamicsProcessesHelper.retrieveOrgQualCase(matchingAccount);
+                Entity qualCase = await DynamicsProcessesHelper.retrieveOrgQualCase(matchingAccount);
 
                 if (qualCase == null)
                     return false;
 
 
+                string ctpOrgId = matchingAccount.GetAttributeValue<string>("ts_ctporgid"); // to make sure accoun
+                
+
+                if (ctpOrgEntity == null)
+                    ctpOrgEntity = await ValidationServicesHelper.getCTPOrgObjects(ctpOrgId);
+
+                if (ctpOrgEntity != null)
+                {
+                    bool existsTransactionIdExternalReference = ((List<dynamic>)ctpOrgEntity["transactionIdExternalReferences"]).Any(tranRef => (string)tranRef.typeValue == validationReqTransactionId);
+
+                    if (!existsTransactionIdExternalReference)
+                        await ProcessHelper.addObject_001ToCtpOrg("ExternalReferenceObject_001", "transaction", validationReqTransactionId, ctpOrgEntity, "nil");
+
+                }
+
+
                 validationRequestCase["parentcaseid"] = new EntityReference(qualCase.LogicalName, qualCase.Id);
-                DynamicsInterface.DataverseClient.Update(validationRequestCase);
+                await DynamicsInterface.DataverseClient.UpdateAsync(validationRequestCase);
 
 
-                IDictionary<string, Object> AgentContact = getAgentContact(validationRequestCase, matchingAccount, validationReqTransactionId, dispositionRequest);
+                IDictionary<string, Object> AgentContact = getAgentContact(validationRequestCase, matchingAccount, validationReqTransactionId);
 
                 string agentContactVerificationStatusText = AgentContact.ContainsKey("agentVerifcationStatusText") ? (string)AgentContact["agentVerifcationStatusText"] : "";
 
@@ -2279,13 +2501,13 @@ namespace DynamicsProcesses
                     validationRequestCase["ts_casestatus"] = qualCase.GetAttributeValue<OptionSetValue>("ts_casestatus");
                     if (agentContactVerificationStatusText == "Verified")
                         validationRequestCase["ts_validationrequestagentverification"] = new OptionSetValue(1);
-                    DynamicsInterface.DataverseClient.Update(validationRequestCase);
+                    await DynamicsInterface.DataverseClient.UpdateAsync(validationRequestCase);
 
 
                     #region PngoId & OrgRefId
                     string orgRefId = DynamicsProcessesHelper.regexMatchValue(@"(?<=\w+_)(\d+)(?=_\w+$)", validationReqTransactionId, 0);
 
-                    string tsPngoCode = account.GetAttributeValue<string>("ts_tspngocode");
+                    string tsPngoCode = validationRequestor.GetAttributeValue<string>("ts_tspngocode");
 
                     string countryCode = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid") == null ? ""
                                                                                         : validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid").ToLower();
@@ -2293,21 +2515,73 @@ namespace DynamicsProcesses
                     if (countryCode != "us" && !string.IsNullOrEmpty(tsPngoCode) && !string.IsNullOrEmpty(orgRefId))
                     {
                         matchingAccount["ts_pporgid"] = orgRefId;
-                        matchingAccount["ts_orgppid"] = new EntityReference("account", matchingAccount.Id);
-                        DynamicsInterface.DataverseClient.Update(matchingAccount);
+                        matchingAccount["ts_orgppid"] = new EntityReference("account", validationRequestor.Id);
+                        await DynamicsInterface.DataverseClient.UpdateAsync(matchingAccount);
                     }
                     #endregion
 
 
                     DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postAutoCloseQueue);
 
+                    string orgMatchNoteDesc = $"An existing org has been found for this Validation Request:"
+                                                + $"{Environment.NewLine}{Environment.NewLine}TSOrgId: {matchingAccount.GetAttributeValue<string>("accountnumber")}"
+                                                    + $"{Environment.NewLine}{Environment.NewLine}The Org is in qualiified status, which will be applied to the Validation Request";
+
+                    processSystemNote("An Org Match Has Been Found", orgMatchNoteDesc, new EntityReference(validationRequestCase.LogicalName, validationRequestCase.Id));
+
+                    await ValidationServicesHelper.sendValidationRequestStatusToRequestor(validationReqTransactionId, validationRequestCase, validationRequestor);
+
                     return success;
                 }
                 #endregion
+                string orgFoundTitle = "";
+                string orgFoundNote = "";
 
+                if (
+                        tsQualCaseStatus != null && tsQualCaseStatus == 102154 //102154 - OQ - Expired
+                    )
+                {
+                    Entity orgDesignationCodeEntity = matchingAccount.GetAttributeValue<EntityReference>("new_orgdesignation") == null ? null :
+                                                           await DynamicsInterface.DataverseClient.RetrieveAsync("new_qualificationcode", matchingAccount.GetAttributeValue<EntityReference>("new_orgdesignation").Id, new ColumnSet(true));
+
+                    Guid orgDesigId = orgDesignationCodeEntity == null ? Guid.Empty : orgDesignationCodeEntity.Id;
+                    string qualCode = orgDesignationCodeEntity?.GetAttributeValue<string>("new_qualcode");
+                    string qualName = orgDesignationCodeEntity.GetAttributeValue<string>("new_qualname");
+
+                    string tsOrgId = matchingAccount.GetAttributeValue<string>("accountnumber");
+
+                    Guid caseId = await createCaseGeneric(title: $"{qualCode} - {qualName} - TSOrgId: {tsOrgId}"
+                                                                                , caseTypeCode: 2
+                                                                                , type: 101996
+                                                                                , customerRef: matchingAccount.ToEntityReference()
+                                                                                , caseStatus: 102050
+                                                                                , qualCodeId: orgDesignationCodeEntity.Id
+                                                                                , extraCaseFields: null
+                                                                                );
+                    if (caseId != Guid.Empty)
+                    {
+                        validationRequestCase["parentcaseid"] = new EntityReference("incident", caseId);
+                        await DynamicsInterface.DataverseClient.UpdateAsync(validationRequestCase);
+
+                        orgFoundTitle = "Org Qualification Expired";
+                        orgFoundNote = $"TSOrgId: {matchingAccount.GetAttributeValue<string>("accountnumber")}"
+                                        + $"{Environment.NewLine}{Environment.NewLine}Org was previously qualified, but its qualified status expired on {qualCase.GetAttributeValue<DateTime>("ts_expirationdate").ToString("MM/dd/yyyy")}";
+
+                        processSystemNote(orgFoundTitle, orgFoundNote, validationRequestCase.ToEntityReference());
+                        response["validationProcessAction"] = "continue";
+                        return true;
+                    }
+                    else
+                    {
+                        orgFoundTitle = "Org Qualification Expired";
+                        orgFoundNote = $"TSOrgId: {matchingAccount.GetAttributeValue<string>("accountnumber")}"
+                                        + $"{Environment.NewLine}{Environment.NewLine}Org qualification has expired, but there was a problem creating the new qual case";
+                        processSystemNote(orgFoundTitle, orgFoundNote, validationRequestCase.ToEntityReference());
+
+                    }
+                }
                 #region Handle Agent Not Found - Found But Not With Org
-                //"contactEntity"
-                //AgentContact.ContainsKey("connectionEntity")
+
                 string reason = "";
 
                 if (tsQualCaseStatus == 102056 && agentContactVerificationStatusText != "Verified")
@@ -2315,14 +2589,32 @@ namespace DynamicsProcesses
                 else if (tsQualCaseStatus != 102056 && agentContactVerificationStatusText != "Verified")
                     reason = "Org needs to be qualified and Agent needs to be verified";
 
-                string dupesNoteDesc = "An existing org has been found for this Validation Request: " + Environment.NewLine + Environment.NewLine;
-                dupesNoteDesc += "TSOrgId: " + matchingAccount.GetAttributeValue<string>("accountnumber") + Environment.NewLine + Environment.NewLine;
-                dupesNoteDesc += reason;
-                processSystemNote("An Org Match Has Been Found", dupesNoteDesc, new EntityReference(validationRequestCase.LogicalName, validationRequestCase.Id));
+
+                orgFoundTitle = "An Org Match Has Been Found";
+                orgFoundNote = $"An existing org has been found for this Validation Request:"
+                                        + $"{Environment.NewLine}{Environment.NewLine}TSOrgId: {matchingAccount.GetAttributeValue<string>("accountnumber")}"
+                                            + $"{Environment.NewLine}{Environment.NewLine}{reason}";                
+
+
+
+
+                string ctpOrgStatus = ctpOrgEntity != null ? ((string)ctpOrgEntity["statusOrgWithExpirationCheck"])?.ToLower() : "";
+
+                if (ctpOrgStatus == "expired")
+                {
+                    orgFoundTitle = "Org Qualification Expired";
+                    orgFoundNote = $"TSOrgId: {matchingAccount.GetAttributeValue<string>("accountnumber")}"
+                                    + $"{Environment.NewLine}{Environment.NewLine}Org was previously qualified, but its qualified status expired on {((DateTime?)ctpOrgEntity["expirationDate"])?.ToString("MM/dd/yyyy") ?? ""}";
+                }
+
+
+
+
+                processSystemNote(orgFoundTitle, orgFoundNote, validationRequestCase.ToEntityReference());
 
 
                 validationRequestCase["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
-                DynamicsInterface.DataverseClient.Update(validationRequestCase);
+                await DynamicsInterface.DataverseClient.UpdateAsync(validationRequestCase);
                 DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postNoAutoCloseQueue);
                 #endregion
 
@@ -2331,45 +2623,166 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in processValidationRequestAccountFound(...). Exception message: " + Environment.NewLine + e.Message
-                                                + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
+                DynamicsInterface.writeToLog($"Error in processValidationRequestAccountFound(...). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}validationReqTransactionId: {validationReqTransactionId}"
                                                 );
                 return false;
             }
 
         }
 
-        public static IDictionary<string, System.Object> findValidationRequestAccountMatches(Entity validationRequestCase, Entity account, string validationReqTransactionId, string queueName, IDictionary<string, Object> dispositionRequest)
+        public static async Task<Entity> getAccountForTsOrgId(string tsOrgId)
+        {
+            try
+            {
+                QueryExpression queryAccount = new QueryExpression("account");
+                queryAccount.ColumnSet = new ColumnSet(true);
+                queryAccount.Criteria.AddCondition("accountnumber", ConditionOperator.Equal, tsOrgId);
+                EntityCollection accountCollection = await DynamicsInterface.DataverseClient.RetrieveMultipleAsync(queryAccount);
+
+                if (accountCollection.Entities.Count == 0)
+                    return null;                
+
+                Entity account = accountCollection.Entities.First();
+                return account;
+            }          
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in getAccountForTsOrgId(). Exception message:{Environment.NewLine}{e.Message}{Environment.NewLine}tsOrgId: {tsOrgId}");
+                return null;
+            }     
+        }
+
+        public static async Task<Entity> findCtpOrgMatch(Entity validationRequestCase, Entity validationRequestor, string validationReqTransactionId, IDictionary<string, System.Object> response)
+        {
+            Entity orgAccount = null;
+            try
+            {    
+                string dispositionDataText = validationRequestCase.GetAttributeValue<string>("ts_validationdispositiondata");
+                dynamic dispositionData = JsonConvert.DeserializeObject(dispositionDataText);
+
+                //bool ctpOrgMatch = dispositionData?.ctp_db_match_status ?? false;
+
+                string matchCtpOrgId = ((JArray)dispositionData?.ctp_db_match_id_set)?.ToList<dynamic>()?.Select(item => (string)item)?.FirstOrDefault();
+
+                if (string.IsNullOrEmpty(matchCtpOrgId))
+                    return null;
+
+                IDictionary<string, Object> ctpOrgEntity = await getCTPOrgObjects(matchCtpOrgId);
+
+
+                if (ctpOrgEntity == null)
+                {
+                    string error = $"At findValidationRequestAccountMatches - ctpOrgEntity is null for ctpOrgId: {matchCtpOrgId}";
+                    DynamicsInterface.writeToLog(error);
+                    return null;
+                }
+
+                string tsOrgId = "";
+
+                if (
+                        !string.IsNullOrEmpty((string)ctpOrgEntity["externalReferenceOnyx"]) && DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] == "prod"
+                    )
+                {
+                    tsOrgId = (string)ctpOrgEntity["externalReferenceOnyx"];
+
+                    orgAccount = await getAccountForTsOrgId(tsOrgId);
+
+                    //if (orgAccount == null)
+                    //{
+                    //    string noteTitle = $"CTP Org Contains TSOrgId Reference - But Was Not Found In Dynamics";
+                    //    string noteDesc = $"CTP Org object contains a reference to TSOrgId"
+                    //                        + $"{Environment.NewLine}Reference value (signature: ExternalReferenceObject_001, type: orgonyx): {tsOrgId}";
+                    //    ;
+                    //    await ProcessHelper.processSystemNote(noteTitle, noteDesc, validationRequestCase.ToEntityReference());
+                    //    return null;
+                    //}
+
+                }
+
+
+                if (string.IsNullOrEmpty(tsOrgId))
+                {
+                    tsOrgId = DynamicsProcessesHelper.getNextTsCustomerId();
+
+                    if (string.IsNullOrEmpty(tsOrgId))
+                        return null;
+
+                    if (DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] == "prod")
+                    {
+                        if (ctpOrgEntity["externalReferenceObjectOnyx"] != null)
+                            await ProcessHelper.updateCtpOrgOnyxExternalReference(tsOrgId, ctpOrgEntity);
+                        else
+                            await ProcessHelper.addOnyxExternalReferenceToCtpOrg(tsOrgId, ctpOrgEntity);                        
+                        
+                        
+                        ctpOrgEntity = await ProcessHelper.getCTPOrgObjects(matchCtpOrgId);
+                        if (ctpOrgEntity == null)
+                            return null;
+
+                        string externalReferenceOnyx = (string)ctpOrgEntity["externalReferenceOnyx"];
+
+                        if (string.IsNullOrEmpty(externalReferenceOnyx))
+                        {
+                            string error = $"findCtpOrgMatch(). externalReferenceOnyx, for {tsOrgId}, not captured in ctpOrgObject, for ctpOrgId {matchCtpOrgId}, after update";
+                            DynamicsInterface.writeToLog(error);
+                            return null;
+                        }
+                    }
+
+                    orgAccount = await createOrgForCtp(ctpOrgEntity, tsOrgId, validationReqTransactionId);
+
+                    if (orgAccount == null)
+                        return null;
+                }
+               
+
+                bool success = await processValidationRequestAccountFound(matchingAccount: orgAccount
+                                                                            , validationRequestCase: validationRequestCase
+                                                                            , validationRequestor: validationRequestor
+                                                                            , validationReqTransactionId: validationReqTransactionId
+                                                                            , response: response
+                                                                            , ctpOrgEntity: ctpOrgEntity
+                                                                            );
+
+                if (!success)
+                {
+                    response["validationProcessAction"] = "ValidationRequestStatusUpdate-RouteToQueue";
+                }
+                else
+                {
+                    int validationRequestCaseStatus = validationRequestCase.GetAttributeValue<OptionSetValue>("ts_casestatus")?.Value ?? -1;
+                    if (validationRequestCaseStatus == 102056) //102056 - OQ - Qualified
+                        response["validationProcessAction"] = "terminate";
+                }
+
+                return orgAccount;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in findCtpOrgMatch(). Exception message:{Environment.NewLine}{e.Message}{Environment.NewLine}transactionId: {validationReqTransactionId}");
+                return null;
+            }
+        }
+        public static async Task<IDictionary<string, System.Object>> findValidationRequestAccountMatches(Entity validationRequestCase, Entity validationRequestor, string validationReqTransactionId)
         {
             IDictionary<string, System.Object> response = new System.Dynamic.ExpandoObject() as IDictionary<string, System.Object>;
             try
             {
                 #region AutomatedValDefinition
-                string duplicateReviewQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.duplicateReviewQueue;
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                        Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                        validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid")?.ToLower()?.Replace("gb", "uk")
-                                                                                                        )?.FirstOrDefault();
-
-                string requestingClientName = account.GetAttributeValue<string>("name");
-                dynamic customerAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.customers)?.ToList<dynamic>()?.
-                                                                                                                                                                                Where(customer => ((string)customer.name)?.ToLower() == requestingClientName.ToLower()
-                                                                                                                                                                                        )?.FirstOrDefault();
-                dynamic validationServicesCustomers = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.validationServicesCustomers;
-
-                duplicateReviewQueue = countryAutomatedValDefinition?.duplicateReviewQueue ?? duplicateReviewQueue;
-                duplicateReviewQueue = customerAutomatedValDefinition == null ? duplicateReviewQueue : (customerAutomatedValDefinition?.duplicateReviewQueue ?? validationServicesCustomers?.duplicateReviewQueue) ?? duplicateReviewQueue;
+                string duplicateReviewQueue = DynamicsProcessesValidationServices.ConfigParams.duplicateReviewQueue;
+                bool includeCtpOrgMatch = DynamicsProcessesValidationServices.ConfigParams.includeCtpOrgMatch;
                 #endregion
 
                 #region Call Account Match Service
-                string legalId = validationRequestCase.GetAttributeValue<string>("ts_validationrequestlegalidentifier");
-                string name = validationRequestCase.GetAttributeValue<string>("ts_validationrequestlegalname");
-                string address1 = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddressline1");
-                string stateProvince =  validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddressstateregion");
-                string postalCode = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresspostalcode");
-                string countryCode = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid");
-                string website = validationRequestCase.GetAttributeValue<string>("ts_validationrequestwebsite");
-                string phone = validationRequestCase.GetAttributeValue<string>("ts_validationrequestphone");
+                string legalId = validationRequestCase.GetAttributeValue<string>("ts_validationrequestlegalidentifier") ?? "";
+                string name = validationRequestCase.GetAttributeValue<string>("ts_validationrequestlegalname") ?? "";
+                string address1 = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddressline1") ?? "";
+                string stateProvince = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddressstateregion") ?? "";
+                string postalCode = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresspostalcode") ?? "";
+                string countryCode = validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid") ?? "";
+                string website = validationRequestCase.GetAttributeValue<string>("ts_validationrequestwebsite") ?? "";
+                string phone = validationRequestCase.GetAttributeValue<string>("ts_validationrequestphone") ?? "";
 
                 IDictionary<string, System.Object> matchRequest = new System.Dynamic.ExpandoObject() as IDictionary<string, System.Object>;
                 matchRequest["legalId"] = legalId;
@@ -2395,11 +2808,19 @@ namespace DynamicsProcesses
                                                                                                     && !Match.AccountName.StartsWith("[")
                                                                                         )?.ToList();
 
-                if (accountMatches == null || accountMatches.Count == 0)
-                    return response;
                 #endregion
 
-                #region Process Matches
+                #region Process Matches                
+                if (accountMatches == null || accountMatches.Count == 0)
+                {
+                    Entity orgAccount = null;
+                    if (includeCtpOrgMatch)
+                        orgAccount = await findCtpOrgMatch(validationRequestCase, validationRequestor, validationReqTransactionId, response);
+
+                    return response;
+                }
+
+
                 response["existsAccount"] = true;
                 if (accountMatches.Count > 1)
                 {
@@ -2416,7 +2837,7 @@ namespace DynamicsProcesses
 
 
                     validationRequestCase["ts_casestatus"] = new OptionSetValue(104696); //OQ - AutoValidation - Duplicate Review
-                    DynamicsInterface.DataverseClient.Update(validationRequestCase);
+                    await DynamicsInterface.DataverseClient.UpdateAsync(validationRequestCase);
 
                     if (!string.IsNullOrEmpty(duplicateReviewQueue))
                         DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, duplicateReviewQueue);
@@ -2428,12 +2849,22 @@ namespace DynamicsProcesses
                     if (validationRequestCase.GetAttributeValue<EntityReference>("parentcaseid") == null)
                     {
                         AccountMatch accountMatch = accountMatches.First();
-                        bool success = processValidationRequestAccountFound(accountMatch, validationRequestCase, account, validationReqTransactionId, queueName, dispositionRequest);
+                        Entity matchingAccount = await DynamicsInterface.DataverseClient.RetrieveAsync("account", accountMatch.AccountId, new ColumnSet(true));
 
-                        if (!success)
-                            response["validationProcessAction"] = "ValidationRequestStatusUpdate-RouteToQueue";
-                        else
-                            response["validationProcessAction"] = "terminate";
+                        bool success = await processValidationRequestAccountFound(matchingAccount: matchingAccount
+                                                                                    , validationRequestCase: validationRequestCase
+                                                                                    , validationRequestor: validationRequestor
+                                                                                    , validationReqTransactionId: validationReqTransactionId
+                                                                                    , response: response
+                                                                                    );
+
+                        if (!response.ContainsKey("validationProcessAction"))
+                        {
+                            if (!success)
+                                response["validationProcessAction"] = "ValidationRequestStatusUpdate-RouteToQueue";
+                            else
+                                response["validationProcessAction"] = "terminate";
+                        }
                     }
                 }
                 #endregion
@@ -2441,8 +2872,8 @@ namespace DynamicsProcesses
             #region Catch
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in findValidationRequestAccountMatches(...). Exception message: " + Environment.NewLine + e.Message
-                                                + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
+                DynamicsInterface.writeToLog($"Error in findValidationRequestAccountMatches(...). Exception message: {Environment.NewLine}{e.Message}"
+                                            + $"{Environment.NewLine}validationReqTransactionId: {validationReqTransactionId}"
                                                 );
                 response["validationProcessAction"] = "ValidationRequestStatusUpdate-RouteToQueue";
 
@@ -2450,11 +2881,1315 @@ namespace DynamicsProcesses
             #endregion
             return response;
         }
-       
+        public static async Task<string> getCtpOrgOnyxExternalReference(string ctpOrgId)
+        {
+            try
+            {
+                IDictionary<string, Object> ctpOrgEntity = await getCTPOrgObjects(ctpOrgId);
+
+                string externalReferenceOnyx = (string)ctpOrgEntity["externalReferenceOnyx"];
+
+                return externalReferenceOnyx;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in getCtpOrgOnyxExternalReference(...). Exception message: {Environment.NewLine}{e.Message}");
+                return null;
+            }
+        }
+        public static async Task<bool> addOnyxExternalReferenceToCtpOrg(string tsOrgId, IDictionary<string, Object> ctpOrgEntity)
+        {
+            try
+            {
+                string ctpOrgId = (string)ctpOrgEntity["ctpOrgId"];
+
+                Dictionary<string, string> ctpObjectIds = new Dictionary<string, string>();
+                ctpObjectIds["rootId"] = (string)ctpOrgEntity["rootId"];
+                ctpObjectIds["associateId"] = (string)ctpOrgEntity["associateId"];
+                ctpObjectIds["tsOrgId"] = tsOrgId;
+
+                Dictionary<string, string> ctpNewObjectIds = await getCTPNewRootInstance();
+                ctpObjectIds["instanceId"] = ctpNewObjectIds["instanceId"];
+                ctpObjectIds["crc"] = ctpNewObjectIds["crc"];
+
+                List<dynamic> io = new List<dynamic>();
+                dynamic newOnyxExternalReference = await getCTPOnyxExternalReferenceObject(ctpObjectIds);
+                io.Add(newOnyxExternalReference);
+
+                IDictionary<string, Object> ctpOrgObjectExpando = JsonConvert.DeserializeObject<ExpandoObject>((string)ctpOrgEntity["orgObjectText"]) as IDictionary<string, Object>;
+                ctpOrgObjectExpando.Remove("io");
+                ctpOrgObjectExpando.Add("io", io);
+
+                string ctpNewOrgObjectText = JsonConvert.SerializeObject(ctpOrgObjectExpando, Newtonsoft.Json.Formatting.None);
+
+
+                string ctpUrl = "https://objects-sysrw.tsgctp.org";
+                string ctpSessionKey = CTPSessionKey;
+                //"61695af7-1652-4b08-b786-192de1884f61";
+                //"0948d6b4-9276-45e7-a345-7de662c3fad5";
+                string endPointPath = $"/services/object/v_001/{ctpSessionKey}/{ctpOrgId}/any/all";
+                dynamic ctpOrgUpdateResponse = await makeHttpPostCall(ctpNewOrgObjectText
+                                                                , ctpUrl, endPointPath
+                                                                , queryParams: null
+                                                                );
+
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in addOnyxExternalReferenceToCtpOrg(). Exception message: {Environment.NewLine}{e.Message}");
+                return false;
+            }
+
+        }
+        public static async Task<dynamic> getCTPOnyxExternalReferenceObject(Dictionary<string, string> ctpObjectIds)
+        {
+            try
+            {
+                Int64 externalObjectTimeStamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                string touchedDate = DateTime.UtcNow.ToString("ddd, dd MMM yyyy HH:mm:ss 'GMT'");
+
+                string onyxExternalReferenceTemplate = @"
+                {
+			        ""instance"": {
+				        ""active"": false,
+				        ""touched_date"": """",
+				        ""state"": true,
+				        ""typeSource"": ""onyx""
+			        },
+			        ""version"": 1,
+			        ""timestamp"": 1,
+			        ""public"": true,
+			        ""protected"": false,
+			        ""type"": ""orgonyx"",
+			        ""signature"": ""ExternalReferenceObject_001"",
+			        ""state"": true,
+			        ""crc"": """",
+			        ""instanceId"": """",
+			        ""rootId"": """",
+			        ""associateId"": """",
+			        ""typeValue"": """",
+			        ""statustimestamp"": 0
+		                        }
+                ";
+
+                dynamic onyxExternalReferenceObject = JsonConvert.DeserializeObject(onyxExternalReferenceTemplate);
+
+                onyxExternalReferenceObject.instance.touched_date = touchedDate;
+                onyxExternalReferenceObject.timestamp = externalObjectTimeStamp;
+                onyxExternalReferenceObject.crc = ctpObjectIds["crc"];
+                onyxExternalReferenceObject.instanceId = ctpObjectIds["instanceId"];
+                onyxExternalReferenceObject.rootId = ctpObjectIds["rootId"];
+                onyxExternalReferenceObject.associateId = ctpObjectIds["associateId"];
+                onyxExternalReferenceObject.typeValue = ctpObjectIds["tsOrgId"];
+
+                return onyxExternalReferenceObject;
+
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in getCTPOnyxExternalReferenceObject(). Exception message: {Environment.NewLine}{e.Message}");
+                return null;
+            }
+
+        }
+
+        public static async Task<Dictionary<string, string>> getCTPNewRootInstance()
+        {
+            Dictionary<string, string> ctpObjectIds = new Dictionary<string, string>();
+            try
+            {
+                string ctpUrl = "https://resource.tsgctp.org";
+                string ctpSessionKey = CTPSessionKey;
+                //ffa07369-c658-41c5-8322-4cf76f2142ea
+                string endPointPath = $"/services/resource/v_001/{ctpSessionKey}/models/generate/processobject";
+
+                dynamic responseJson = await makeHttpGetCall(
+                                                                ctpUrl, endPointPath
+                                                                , queryParams: null
+                                                                );
+
+
+                dynamic ctpProcessObject = responseJson.returnStatus?.data;
+
+
+                dynamic revisionObject = ((JArray)ctpProcessObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "RevisionObject_001"
+                                                                                                    )?.FirstOrDefault();
+
+                string crc = revisionObject?.crc;
+                string instanceId = revisionObject?.instanceId;
+                string rootId = revisionObject?.rootId;
+                string associateId = revisionObject?.associateId;
+
+                ctpObjectIds["crc"] = crc;
+                ctpObjectIds["instanceId"] = instanceId;
+                ctpObjectIds["rootId"] = rootId;
+                ctpObjectIds["associateId"] = associateId;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in getCTPNewRootInstance(). Exception message: {Environment.NewLine}{e.Message}");
+            }
+            return ctpObjectIds;
+        }
+
+        public static async Task<IDictionary<string, Object>> getCTPOrgObjects(string ctpOrgId)
+        {
+            try
+            {
+                string ctpUrl = "https://objects-sysrw.tsgctp.org";
+                string ctpSessionKey = CTPSessionKey;
+                //"61695af7-1652-4b08-b786-192de1884f61";
+                //"0948d6b4-9276-45e7-a345-7de662c3fad5";
+                //"61695af7-1652-4b08-b786-192de1884f61";
+                string endPointPath = $"/services/object/v_001/{ctpSessionKey}/{ctpOrgId}/any/all";
+
+                dynamic responseJson = await makeHttpGetCall(
+                                                            ctpUrl, endPointPath
+                                                            , queryParams: null
+                                                            );
+
+
+                if (responseJson == null)
+                {
+                    string error = "At getCTPOrgObjects(). Call to get ctpOrgObject returned null";
+                    DynamicsInterface.writeToLog(error);
+                    return null;
+                }
+
+                dynamic ctpOrgObject = responseJson.returnStatus?.data;
+
+
+                IDictionary<string, Object> ctpOrgEntity = new ExpandoObject() as IDictionary<string, Object>;
+
+                string ctpOrgObjectText = JsonConvert.SerializeObject(ctpOrgObject, Newtonsoft.Json.Formatting.Indented);
+
+                int ctpOrgObjectLength = ctpOrgObjectText.Length;
+                if (DynamicsInterface.VerboseLog)
+                    DynamicsInterface.writeToLog($"getCTPOrgObjects()"
+                                                    + $"{Environment.NewLine}ctpOrgObject length: {ctpOrgObjectLength}"
+                                                    );
+
+                ctpOrgEntity["orgObjectText"] = ctpOrgObjectText;
+                ctpOrgEntity["ctpOrgId"] = ctpOrgId;
+                ctpOrgEntity["sourceTytpe"] = cleanCtpString((string)ctpOrgObject?.type) ?? "";
+                ctpOrgEntity["validationRequestTransactionId"] = cleanCtpString((string)ctpOrgObject?.externalTransactionId) ?? "";
+                ctpOrgEntity["ctpOrgObjectDate"] = convertTimestampToDatetime((long)(ctpOrgObject?.timestamp ?? 0));
+
+                dynamic operatingBudget = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "FinancialObject_001" && instance.type == "operatingBudget")?.FirstOrDefault();
+                ctpOrgEntity["operatingBudget"] = cleanCtpString((string)operatingBudget?.typeValue);
+
+                dynamic phoneMain = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "PhoneObject_001" && instance.type == "main")?.FirstOrDefault();
+                ctpOrgEntity["phoneMain"] = cleanCtpString((string)phoneMain?.typeValue);
+
+                dynamic locationMain = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "LocationObject_001" && instance.type == "main")?.FirstOrDefault();
+                IDictionary<string, Object> addressMain = new ExpandoObject() as IDictionary<string, Object>;
+                addressMain["address"] = cleanCtpString((string)locationMain?.instance?.address);
+                addressMain["addressExt"] = cleanCtpString((string)locationMain?.instance?.addressExt);
+                addressMain["city"] = cleanCtpString((string)locationMain?.instance?.city);
+                addressMain["countryId"] = cleanCtpString((string)locationMain?.instance?.countryId);
+                addressMain["postalCode"] = cleanCtpString((string)locationMain?.instance?.postalCode);
+
+                string countryId = cleanCtpString((string)locationMain?.instance?.countryId);
+                string stateRegion = cleanCtpString((string)locationMain?.instance?.stateRegion ?? "");
+                stateRegion = regexReplace(@"^" + countryId + "-", stateRegion, "");
+                addressMain["stateRegion"] = stateRegion;
+
+                ctpOrgEntity.Add("addressMain", addressMain);
+
+                dynamic locationLegal = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "LocationObject_001" && instance.type == "legal")?.FirstOrDefault();
+                IDictionary<string, Object> addressLegal = new ExpandoObject() as IDictionary<string, Object>;
+                addressLegal["address"] = cleanCtpString((string)locationLegal?.instance?.address);
+                addressLegal["addressExt"] = cleanCtpString((string)locationLegal?.instance?.addressExt);
+                addressLegal["city"] = cleanCtpString((string)locationLegal?.instance?.city);
+                addressLegal["countryId"] = cleanCtpString((string)locationLegal?.instance?.countryId);
+                addressLegal["postalCode"] = cleanCtpString((string)locationLegal?.instance?.postalCode);
+
+                countryId = cleanCtpString((string)locationLegal?.instance?.countryId);
+                stateRegion = cleanCtpString((string)locationLegal?.instance?.stateRegion ?? "");
+                stateRegion = regexReplace(@"^" + countryId + "-", stateRegion, "");
+                addressLegal["stateRegion"] = stateRegion;
+
+                ctpOrgEntity.Add("addressLegal", addressLegal);
+
+                dynamic locationOperations = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "LocationObject_001" && instance.type == "operations")?.FirstOrDefault();
+                IDictionary<string, Object> addressOperations = new ExpandoObject() as IDictionary<string, Object>;
+                addressOperations["address"] = cleanCtpString((string)locationOperations?.instance?.address);
+                addressOperations["addressExt"] = cleanCtpString((string)locationOperations?.instance?.addressExt);
+                addressOperations["city"] = cleanCtpString((string)locationOperations?.instance?.city);
+                addressOperations["countryId"] = cleanCtpString((string)locationOperations?.instance?.countryId);
+                addressOperations["postalCode"] = cleanCtpString((string)locationOperations?.instance?.postalCode);
+
+                countryId = cleanCtpString((string)locationOperations?.instance?.countryId);
+                stateRegion = cleanCtpString((string)locationOperations?.instance?.stateRegion ?? "");
+                stateRegion = regexReplace(@"^" + countryId + "-", stateRegion, "");
+                addressOperations["stateRegion"] = stateRegion;
+
+                ctpOrgEntity.Add("addressOperations", addressOperations);
+
+
+
+                dynamic purposeActivityCode = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "PurposeObject_001" && instance.type == "subActivity")?.FirstOrDefault();
+                ctpOrgEntity["purposeActivityCode"] = cleanCtpString((string)purposeActivityCode?.typeValue);
+
+                dynamic languageEnglish = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "LanguageObject_001")?.FirstOrDefault();// && instance.type == "english"
+                ctpOrgEntity["language"] = cleanCtpString((string)languageEnglish?.type);
+                ctpOrgEntity["languageCode"] = cleanCtpString((string)languageEnglish?.typeValue);
+
+                dynamic descriptiveObjectMission = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "DescriptiveTextObject_001" && instance.type == "missionStatement"
+                                                                                                                      && !string.IsNullOrWhiteSpace((string)instance.instance?.rawText) && (string)instance.instance?.rawText != "nil"
+                                                                                                                      )?.FirstOrDefault();
+                ctpOrgEntity["descriptiveObjectMission"] = cleanCtpString((string)descriptiveObjectMission?.instance?.rawText);
+
+                dynamic webSiteMain = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "WebsiteObject_001" && instance.type == "main")?.FirstOrDefault();
+                ctpOrgEntity["webSiteMain"] = cleanCtpString((string)webSiteMain?.typeValue);
+
+
+                /******/
+
+
+                dynamic externalReferenceOnyx = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "ExternalReferenceObject_001" && instance.type == "orgonyx")?.FirstOrDefault();
+                ctpOrgEntity["externalReferenceObjectOnyx"] = externalReferenceOnyx;
+                ctpOrgEntity["externalReferenceOnyx"] = cleanCtpString((string)externalReferenceOnyx?.typeValue);
+
+
+                List<dynamic> onyxExternalReferences = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "ExternalReferenceObject_001" && instance.type == "orgonyx")?.ToList() ?? new List<dynamic>();
+                ctpOrgEntity["onyxExternalReferences"] = onyxExternalReferences;
+
+
+                /******/
+
+
+
+                dynamic externalReferenceTransaction = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "ExternalReferenceObject_001" && instance.type == "transaction")?.FirstOrDefault();
+                ctpOrgEntity["externalReferenceTransactionId"] = cleanCtpString((string)externalReferenceTransaction?.typeValue);
+
+                dynamic transactionIdExternalReferences = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "ExternalReferenceObject_001" && instance.type == "transaction")?.ToList() ?? new List<dynamic>();
+                ctpOrgEntity["transactionIdExternalReferences"] = transactionIdExternalReferences;
+
+
+
+
+
+                dynamic tracker = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "TrackerObject_001" && instance.type == "tracker")?.FirstOrDefault();
+                ctpOrgEntity["trackerObjectValue"] = cleanCtpString((string)tracker?.typeValue);
+                ctpOrgEntity["trackerObjectDate"] = convertTimestampToDatetime((long)(tracker?.timestamp ?? 0));
+
+                dynamic entityOrganization = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "EntityObject_001" && instance.type == "Organization")?.FirstOrDefault();
+                ctpOrgEntity["entityObjectOrganization"] = entityOrganization;
+                ctpOrgEntity["entityOrganization"] = cleanCtpString((string)entityOrganization?.typeValue) ?? "";
+                ctpOrgEntity["rootId"] = (string)entityOrganization?.rootId;
+                ctpOrgEntity["entityOrganizationInstanceId"] = (string)entityOrganization?.instanceId;
+                ctpOrgEntity["associateId"] = (string)entityOrganization?.associateId;
+                ctpOrgEntity["entityOrganizationTimestamp"] = (string)entityOrganization?.timestamp;
+                ctpOrgEntity["entityOrganizationDate"] = convertTimestampToDatetime((long)(entityOrganization?.timestamp ?? 0));
+
+                dynamic emailMain = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "EmailObject_001" && instance.type == "main" && instance.associateId == ctpOrgEntity["entityOrganizationInstanceId"])?.FirstOrDefault();
+                ctpOrgEntity["emailMain"] = cleanCtpString((string)emailMain?.typeValue);
+
+                dynamic domainObject = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "DomainObject_001" && instance.type == "domain")?.FirstOrDefault();
+                ctpOrgEntity["orgDomain"] = cleanCtpString((string)domainObject?.typeValue);
+
+                dynamic legalIdentifiers = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "LegalIdentifierObject_001").FirstOrDefault();// "type": "EIN" // && instance.type == "");
+                ctpOrgEntity["legalIdentifier"] = cleanCtpString((string)legalIdentifiers?.typeValue);
+                ctpOrgEntity["legalIdentifierType"] = cleanCtpString((string)legalIdentifiers?.type);
+
+                dynamic statusOrg = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "StatusObject_001" && instance.type == "main")?.FirstOrDefault();
+                string qualStatusOrg = cleanCtpString((string)statusOrg?.typeValue ?? "");
+                DateTime statusDate = (long)(statusOrg?.statustimestamp ?? 0) == 0 ? convertTimestampToDatetime((long)(statusOrg?.timestamp ?? 0)) : convertTimestampToDatetime((long)(statusOrg?.statustimestamp ?? 0));
+                string yearsQualifiedStatusIsValid = cleanCtpString((string)statusOrg?.instance?.vinfo?.years);
+
+
+                ctpOrgEntity["statusOrg"] = qualStatusOrg;
+                ctpOrgEntity["statusDate"] = statusDate;
+                ctpOrgEntity["yearsQualifiedStatusIsValid"] = yearsQualifiedStatusIsValid;
+
+                int validityPeriodYears = 0;
+                if (!string.IsNullOrEmpty(yearsQualifiedStatusIsValid))
+                    int.TryParse(yearsQualifiedStatusIsValid, out validityPeriodYears);
+
+                DateTime expirationDate = qualStatusOrg.ToLower() != "qualified" ? DateTime.MinValue : statusDate.AddYears(validityPeriodYears).Date.AddMonths(-2);
+                string statusOrgWithExpirationCheck = qualStatusOrg.ToLower() != "qualified" ? "Disqualified" : //Todo: need to check transaction status to see if disqualified
+                                                                                            (expirationDate > DateTime.UtcNow.Date ? "Qualified" : "Expired");
+                //(expirationDate > DateTime.UtcNow.Date.AddMonths(3) ? "Qualified" : "Expired");
+
+
+                ctpOrgEntity["expirationDate"] = expirationDate;
+                ctpOrgEntity["statusOrgWithExpirationCheck"] = statusOrgWithExpirationCheck;
+
+
+                dynamic orgLegalName = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "NameObject_001" && instance.type == "legalName")?.FirstOrDefault();
+                ctpOrgEntity["orgLegalName"] = cleanCtpString((string)orgLegalName?.typeValue);
+
+
+                List<dynamic> entityAgents = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "EntityObject_001" && instance.type == "Person" && instance.typeValue == "Agent")?.ToList() ?? new List<dynamic>();
+
+                List<dynamic> ctpOrgAgents = new List<dynamic>();
+
+
+                foreach (dynamic entityAgent in entityAgents)
+                {
+                    IDictionary<string, Object> orgAgent = new ExpandoObject() as IDictionary<string, Object>;
+
+                    orgAgent["agentInstanceId"] = cleanCtpString((string)entityAgent?.instanceId);
+
+                    dynamic agentFirstName = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "NameObject_001" && instance.type == "firstName" && instance.associateId == orgAgent["agentInstanceId"])?.FirstOrDefault();
+                    orgAgent["firstName"] = cleanCtpString((string)agentFirstName?.typeValue);
+
+                    dynamic agentLastName = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "NameObject_001" && instance.type == "lastName" && instance.associateId == orgAgent["agentInstanceId"])?.FirstOrDefault();
+                    orgAgent["lastName"] = cleanCtpString((string)agentLastName?.typeValue);
+
+                    dynamic agentEmail = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "EmailObject_001" && instance.type == "main" && instance.associateId == orgAgent["agentInstanceId"])?.FirstOrDefault();
+                    orgAgent["email"] = cleanCtpString((string)agentEmail?.typeValue);
+
+                    dynamic agentStatus = ((JArray)ctpOrgObject?.io)?.ToList<dynamic>()?.Where(instance => instance.signature == "StatusObject_001" && instance.type == "agent" && instance.associateId == orgAgent["agentInstanceId"])?.FirstOrDefault();
+                    orgAgent["status"] = cleanCtpString((string)agentStatus?.typeValue);
+                    orgAgent["agentStatusObject"] = agentStatus;
+
+                    ctpOrgAgents.Add(orgAgent);
+                }
+
+                ctpOrgEntity.Add("orgAgents", ctpOrgAgents);
+
+
+                string ctpOrgEntityText = JsonConvert.SerializeObject(ctpOrgEntity, Newtonsoft.Json.Formatting.Indented);
+
+                dynamic ctpOrgEntityJson = JsonConvert.DeserializeObject(ctpOrgEntityText);
+
+                return ctpOrgEntity;
+
+            }
+            catch (Exception e)
+            {
+                string error = $"Error in getCTPOrgObjects(). Exception message: {Environment.NewLine}{e.Message}{Environment.NewLine}ctpOrgId: {ctpOrgId}";
+                DynamicsInterface.writeToLog(error);
+            }
+
+            return null;
+        }
+
+        public static async Task<int> getOptionSetValue(string optionSetName, string optionLabel
+                                                        , DataverseClientLib.ServiceClient dataverseClient = null)
+        {
+            int optionValue = 0;
+            try
+            {
+                dataverseClient = dataverseClient ?? DynamicsInterface.DataverseClient;
+
+                RetrieveOptionSetRequest retrieveOptionSetRequest = new RetrieveOptionSetRequest
+                {
+                    Name = optionSetName
+                };
+
+                RetrieveOptionSetResponse retrieveOptionSetResponse = (RetrieveOptionSetResponse)await dataverseClient.ExecuteAsync(retrieveOptionSetRequest);
+                OptionSetMetadata retrievedOptionSetMetadata = (OptionSetMetadata)retrieveOptionSetResponse.OptionSetMetadata;
+                OptionMetadataCollection options = retrievedOptionSetMetadata.Options;
+                OptionMetadata option = options.ToList().Find(item => item.Label.UserLocalizedLabel.Label.ToLower() == optionLabel.ToLower());
+
+                if (option != null)
+                    optionValue = option.Value.Value;
+
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in getOptionSetValue(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}optionSetName: {optionSetName}; optionLabel: {optionLabel}"
+                                                );
+            }
+
+            return optionValue;
+        }
+
+        public static dynamic getOptionSetValue(string optionSetName, string optionLabel, bool addIfNotFound = true)
+        {
+            dynamic optionValueResponse = new JObject();
+            try
+            {
+                RetrieveOptionSetRequest retrieveOptionSetRequest = new RetrieveOptionSetRequest
+                {
+                    Name = optionSetName
+                };
+
+                RetrieveOptionSetResponse retrieveOptionSetResponse = (RetrieveOptionSetResponse)DynamicsInterface.DataverseClient.Execute(retrieveOptionSetRequest);
+                OptionSetMetadata retrievedOptionSetMetadata = (OptionSetMetadata)retrieveOptionSetResponse.OptionSetMetadata;
+                OptionMetadataCollection options = retrievedOptionSetMetadata.Options;
+                OptionMetadata option = options.ToList().Find(item => item.Label.UserLocalizedLabel.Label.ToLower() == optionLabel.ToLower());
+
+                if (option != null)
+                {
+                    optionValueResponse.optionValue = (int)option.Value.Value;
+                    optionValueResponse.newValue = false;
+                    return optionValueResponse;
+                }
+
+                if (addIfNotFound)
+                {
+                    InsertOptionValueRequest request = new InsertOptionValueRequest();
+                    request.OptionSetName = optionSetName;
+                    request.Label = new Label(optionLabel, 1033);
+
+                    InsertOptionValueResponse response = (InsertOptionValueResponse)DynamicsInterface.DataverseClient.Execute(request);
+
+                    optionValueResponse.optionValue = response.NewOptionValue;
+                    optionValueResponse.newValue = true;
+                    return optionValueResponse;
+                }
+
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in getOptionSetValue(addIfNotFound). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}optionSetName: {optionSetName}; optionLabel: {optionLabel}"
+                                                );
+            }
+            return optionValueResponse;
+        }
+
+
+        public static async Task<bool> existsOptionSetValue(string optionSetName, int value)
+        {
+            try
+            {
+                RetrieveOptionSetRequest retrieveOptionSetRequest = new RetrieveOptionSetRequest
+                {
+                    Name = optionSetName
+                };
+
+                RetrieveOptionSetResponse retrieveOptionSetResponse = (RetrieveOptionSetResponse)await DynamicsInterface.DataverseClient.ExecuteAsync(retrieveOptionSetRequest);
+                OptionSetMetadata retrievedOptionSetMetadata = (OptionSetMetadata)retrieveOptionSetResponse.OptionSetMetadata;
+                OptionMetadataCollection options = retrievedOptionSetMetadata.Options;
+                OptionMetadata option = options.ToList().Find(item => item.Value == value);
+
+                return option != null;
+            }
+            catch (Exception e)
+            {
+                string error = $"Error in existsOptionSetValue(). Exception message:{Environment.NewLine}{e.Message}{Environment.NewLine}optionSetName: {optionSetName}; Option Value: {value}"
+                                ;
+                DynamicsInterface.writeToLog(error
+                                                );
+                return false;
+            }
+        }
+        public static async Task<Guid> createOrgQualification(Guid accountId, Guid qualCodeId, int qualStatusCode, DateTime qualStatusDateUTC
+                                                                            , int tsOrgId, string qualCode
+                                                                            , DataverseClientLib.ServiceClient dataverseClient = null)
+        {
+            Guid orgQualId = Guid.Empty;
+            try
+            {
+                dataverseClient = dataverseClient ?? DynamicsInterface.DataverseClient;
+
+                Entity orgQualification = new Entity("ts_organizationqualification");
+
+
+
+                orgQualification["ts_qualificationstatus"] = new OptionSetValue(qualStatusCode); //choice ts_qualstatus 
+                orgQualification["ts_qualificationstatusdate"] = qualStatusDateUTC;
+                orgQualification["ts_accountid"] = new EntityReference("account", accountId);
+                orgQualification["ts_qualificationcodeid"] = new EntityReference("new_qualificationcode", qualCodeId);
+                orgQualification["ts_name"] = tsOrgId.ToString() + " - " + qualCode;
+
+
+
+                orgQualId = await dataverseClient.CreateAsync(orgQualification);
+
+
+                Entity orgQualHistory = new Entity("ts_organizationqualificationhistory");
+
+                orgQualHistory["ts_organizationqualificationid"] = new EntityReference("ts_organizationqualification", orgQualId);
+                orgQualHistory["ts_qualificationstatusaction"] = new OptionSetValue(qualStatusCode);
+                orgQualHistory["ts_qualificationactiondate"] = qualStatusDateUTC;
+                orgQualHistory["ts_name"] = orgQualId.ToString() + " - " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
+
+                Guid orgQualHistoryId = await dataverseClient.CreateAsync(orgQualHistory);
+            }
+            catch (Exception e)
+            {
+                string error = $"Error in createOrgQualification(...). Exception message:{Environment.NewLine}{e.Message}"
+                                + $"{Environment.NewLine}accountId: {accountId.ToString()}; qualCodeId: {qualCodeId.ToString()}{Environment.NewLine}tsOrgId: {tsOrgId.ToString()}; qualCode: {qualCode}"
+                                + $"; qualStatusCode: {qualStatusCode.ToString()}"
+                                ;
+                DynamicsInterface.writeToLog(error);
+
+                return Guid.Empty;
+            }
+
+            return orgQualId;
+        }
+        public static async Task<Entity> createOrgForCtp(IDictionary<string, Object> ctpOrgEntity
+                                                            , string tsOrgId
+                                                            , string validationReqTransactionId
+                                                            , DataverseClientLib.ServiceClient dataverseClient = null
+                                                            )
+        {
+            try
+            {
+                dataverseClient = dataverseClient ?? DynamicsInterface.DataverseClient;
+
+                #region New Account Entity
+                Entity account = new Entity("account");
+                #endregion
+
+                string sourceTytpe = (string)ctpOrgEntity["sourceTytpe"] ?? "";
+
+                Dictionary<string, string> sourceTypeMappings = new Dictionary<string, string>()
+                {
+                    { "msft", "Microsoft" }                    
+                };
+
+                sourceTytpe = sourceTypeMappings.ContainsKey(sourceTytpe.ToLower()) ? sourceTypeMappings[sourceTytpe.ToLower()] : sourceTytpe;
+
+                int orgSource = await getOptionSetValue("new_tsgsource", sourceTytpe
+                                                                , dataverseClient
+                                                                 );
+
+                #region Name, Org Designation, Mission Statement...
+                if (tsOrgId != null)
+                    account["accountnumber"] = tsOrgId;
+
+                account["name"] = ctpOrgEntity["orgLegalName"];
+                account["customertypecode"] = new OptionSetValue(3); //3 - Customer
+                account["new_source"] = orgSource == 0 ? new OptionSetValue(101892) : new OptionSetValue(orgSource); //TSS Web Site 101892
+
+                account["ts_ctporgid"] = ctpOrgEntity["ctpOrgId"];
+
+                IDictionary<string, Object> addressMain = (IDictionary<string, Object>)ctpOrgEntity["addressMain"];
+
+
+                string countryCode = (string)addressMain["countryId"] ?? "";
+                string entityOrganization = (string)ctpOrgEntity["entityOrganization"] ?? "";
+                string qualCode = (countryCode.ToLower() == "gb" ? "uk" : countryCode.ToLower())
+                                                                                + (entityOrganization.ToLower() == "lib" ? "-lib" : "-npo");
+
+                if (countryCode.ToLower() == "ca" && entityOrganization.ToLower() == "npo")
+                    qualCode = "ca-cha";
+
+                List<string> usAndTerritoriesCodes = new string[] { "AS", "FM", "GU", "MP", "PR", "UM", "US", "VI" }.ToList();
+
+                if (
+                    usAndTerritoriesCodes.Exists(code => code.ToLower() == countryCode.ToLower()) && entityOrganization.ToLower() == "lib"
+                    )
+                    qualCode += "-501c3";
+
+
+                QueryExpression queryQualCode = new QueryExpression("new_qualificationcode");
+                queryQualCode.ColumnSet = new ColumnSet(true);
+                queryQualCode.Criteria.AddCondition("new_qualcode", ConditionOperator.Equal, qualCode);
+
+                EntityCollection qualCodeCollection = await dataverseClient.RetrieveMultipleAsync(queryQualCode);
+
+                if (qualCodeCollection.Entities.Count == 0)
+                {
+                    string error = "Error in createOrgFromCase(). No Qualification Code found for qualCode: " + qualCode;
+                    DynamicsInterface.writeToLog(error);
+                    return null;
+                }
+                Entity qualCodeEntity = qualCodeCollection.Entities.First();
+                string qualName = qualCodeEntity.GetAttributeValue<string>("new_qualname");
+
+                account["new_orgdesignation"] = qualCodeEntity.ToEntityReference();
+
+                account["ts_missionstatement"] = (string)ctpOrgEntity["descriptiveObjectMission"];
+
+                account["telephone1"] = (string)ctpOrgEntity["phoneMain"];
+                #endregion
+
+
+                #region Address
+                account["address1_country"] = (string)addressMain["countryId"];
+                account["address1_stateorprovince"] = (string)addressMain["stateRegion"];
+                account["address1_line1"] = (string)addressMain["address"];
+                account["address1_line2"] = (string)addressMain["addressExt"];
+                account["address1_city"] = (string)addressMain["city"];
+                account["address1_postalcode"] = (string)addressMain["postalCode"];
+
+
+                #region Country And State Hierarchy Mapping
+                QueryExpression queryFieldMap = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryFieldMap.ColumnSet = new ColumnSet(true);
+                queryFieldMap.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "country");
+                queryFieldMap.Criteria.AddCondition("ts_value", ConditionOperator.Equal, (string)addressMain["countryId"]);
+                EntityCollection fieldMapCollection = await dataverseClient.RetrieveMultipleAsync(queryFieldMap);
+
+                if (fieldMapCollection.Entities.Count > 0)
+                {
+                    Entity fieldHierarchy = fieldMapCollection.Entities.First();
+                    int countryOptionValue = fieldHierarchy.GetAttributeValue<int>("ts_valuecode");
+                    account["ts_countrydesc"] = new OptionSetValue(countryOptionValue);
+                }
+
+
+                queryFieldMap = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryFieldMap.ColumnSet = new ColumnSet(true);
+                queryFieldMap.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "stateorprovince");
+                queryFieldMap.Criteria.AddCondition("ts_parentfieldvalue", ConditionOperator.Equal, (string)addressMain["countryId"]);
+                queryFieldMap.Criteria.AddCondition("ts_value", ConditionOperator.Equal, (string)addressMain["stateRegion"]);
+                fieldMapCollection = await dataverseClient.RetrieveMultipleAsync(queryFieldMap);
+
+                if (fieldMapCollection.Entities.Count > 0)
+                {
+                    Entity fieldHierarchy = fieldMapCollection.Entities.First();
+                    int countryOptionValue = fieldHierarchy.GetAttributeValue<int>("ts_valuecode");
+                    account["ts_stateprovdesc"] = new OptionSetValue(countryOptionValue);
+                }
+                #endregion
+                #endregion
+
+
+                #region Email, Url, Budget, Legal Identifier & Activity Code
+
+                account["emailaddress1"] = (string)ctpOrgEntity["emailMain"];
+                account["websiteurl"] = (string)ctpOrgEntity["webSiteMain"];
+                string budget = (string)ctpOrgEntity["operatingBudget"];
+                account["new_budget"] = budget;
+
+
+                account["new_legalidentifier"] = ctpOrgEntity["legalIdentifier"];
+
+
+                QueryExpression queryEntity = new QueryExpression("new_activitycodes");
+                queryEntity.Criteria.AddCondition("new_activitycode", ConditionOperator.Equal, (string)ctpOrgEntity["purposeActivityCode"]);
+                EntityCollection entityCollection = await dataverseClient.RetrieveMultipleAsync(queryEntity);
+
+                if (entityCollection.Entities.Count > 0)
+                    account["new_activitycode"] = new EntityReference("new_activitycodes", entityCollection.Entities.First().Id);
+
+                #endregion
+
+                OptionSetValueCollection accountDirectivesCollection = new OptionSetValueCollection();
+                //accountDirectivesCollection.Add(new OptionSetValue(1)); //1 - ExcludeDataIntegration
+                accountDirectivesCollection.Add(new OptionSetValue(2)); //2 - ExcludePostAccountCreateAutoLogic
+                accountDirectivesCollection.Add(new OptionSetValue(3)); //3 - BypassPreAccountValidation
+                account["ts_accountdirectives"] = accountDirectivesCollection;
+
+                OptionSetValueCollection accountTypeCollection = new OptionSetValueCollection();
+                accountTypeCollection.Add(new OptionSetValue(18)); // 18 - Validation Services
+                account["ts_accounttype"] = accountTypeCollection;
+
+                account["overriddencreatedon"] = (DateTime)ctpOrgEntity["entityOrganizationDate"];
+
+                #region Account Create & Retrieve
+                Guid accountId = await dataverseClient.CreateAsync(account);
+
+                if (accountId == Guid.Empty)
+                {
+                    string error = "Error in createOrgFromCase(). Account was not created";
+
+                    DynamicsInterface.writeToLog(error);
+                    return null;
+                }
+
+                account = await dataverseClient.RetrieveAsync(account.LogicalName, accountId, new ColumnSet(true));
+                tsOrgId = account.GetAttributeValue<string>("accountnumber");
+                #endregion
+
+                int qualStatusCode = int.Parse(QualStatus[((string)ctpOrgEntity["statusOrgWithExpirationCheck"]).ToLower()]);
+                DateTime statusDate = QualStatus[qualStatusCode.ToString()] == "expired" ? (DateTime)ctpOrgEntity["expirationDate"] : (DateTime)ctpOrgEntity["statusDate"];
+                await createOrgQualification(accountId, qualCodeEntity.Id, qualStatusCode, statusDate, int.Parse(tsOrgId)
+                                                                , qualCode
+                                                                , dataverseClient
+                                                                 );
+
+                int tsCaseStatusCode = QualStatus[qualStatusCode.ToString()] == "qualified" ? 102056 : 102057;//102056 - OQ - Qualified; 102057 - OQ - Disqualified; 102050 - OQ - Not Started
+
+
+                QueryExpression queryMapping = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryMapping.ColumnSet = new ColumnSet("ts_value", "ts_valuecode");
+                queryMapping.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "ts_casestatus");
+                queryMapping.Criteria.AddCondition("ts_parentfieldvalue", ConditionOperator.Equal, "Organization Qualification");
+                queryMapping.Criteria.AddCondition("ts_mappedfieldvalue", ConditionOperator.Equal, (string)ctpOrgEntity["statusOrgWithExpirationCheck"]);
+                EntityCollection mappingCollection = await dataverseClient.RetrieveMultipleAsync(queryMapping);
+
+                if (mappingCollection.Entities.Count > 0)
+                {
+                    Entity fieldMapping = mappingCollection.Entities.First();
+                    string tsCaseStatus = fieldMapping.GetAttributeValue<string>("ts_value"); //Case status
+                    tsCaseStatusCode = fieldMapping.GetAttributeValue<int>("ts_valuecode"); //Case status option value
+                }
+
+                DateTime accountCreatedOn = account.GetAttributeValue<DateTime>("createdon");
+
+                Dictionary<string, object> extraCaseFields = new Dictionary<string, object>();
+                extraCaseFields.Add("overriddencreatedon", accountCreatedOn);
+                if (QualStatus[qualStatusCode.ToString()] == "qualified" || QualStatus[qualStatusCode.ToString()] == "expired")
+                    extraCaseFields.Add("ts_expirationdate", (DateTime)ctpOrgEntity["expirationDate"]);
+
+
+                Guid caseId = await createCaseGeneric(title: $"{qualCode} - {qualName} - TSOrgId: {tsOrgId}"
+                                                                            , caseTypeCode: 2
+                                                                            , type: 101996
+                                                                            , customerRef: account.ToEntityReference()
+                                                                            , caseStatus: tsCaseStatusCode
+                                                                            , qualCodeId: qualCodeEntity.Id
+                                                                            , extraCaseFields: extraCaseFields
+                                                                            , dataverseClient
+                                                                            );
+
+
+                if (QualStatus[qualStatusCode.ToString()] != "qualified") //restart the validation process, even for disqualified orgs
+                    caseId = await createCaseGeneric(title: $"{qualCode} - {qualName} - TSOrgId: {tsOrgId}"
+                                                                            , caseTypeCode: 2
+                                                                            , type: 101996
+                                                                            , customerRef: account.ToEntityReference()
+                                                                            , caseStatus: 102050
+                                                                            , qualCodeId: qualCodeEntity.Id
+                                                                            , extraCaseFields: null
+                                                                            , dataverseClient
+                                                                            );
+
+
+                IDictionary<string, Object> addressLegal = (IDictionary<string, Object>)(ctpOrgEntity["addressLegal"] ?? ctpOrgEntity["addressMain"]);
+                await addLegalAddress(accountId, addressLegal
+                                                            , dataverseClient
+                                        );
+
+                processSystemNote(" --- ctpOrgObject --- ", (string)ctpOrgEntity["orgObjectText"], account.ToEntityReference());
+
+
+
+
+                dynamic ctpOrgEntityJson = JsonConvert.DeserializeObject(JsonConvert.SerializeObject(ctpOrgEntity));
+                List<dynamic> orgAgents = ((JArray)ctpOrgEntityJson.orgAgents)?.ToList<dynamic>() ?? new List<dynamic>();
+
+                foreach (dynamic orgAgent in orgAgents)
+                {
+                    OptionSetValue agentVerificationStatusOption = orgAgent.status == "Verified" ? new OptionSetValue(1) : new OptionSetValue(0); //0 - not verified; 1 - verified
+
+                    Entity agentContact = await createAgentContact(orgAgent, validationReqTransactionId);
+
+                    if (agentContact != null)
+                        connectAgentToAccount(accountId, agentContact.Id, agentVerificationStatusOption, validationReqTransactionId);
+                }
+
+
+                //dynamic orgAgent = ((JArray)ctpOrgEntityJson.orgAgents)?.ToList<dynamic>()?.Where(agent => (string)agent.status == "Verified")?.FirstOrDefault();               
+
+                //orgAgent = orgAgent ?? ((JArray)ctpOrgEntityJson.orgAgents)?.ToList<dynamic>()?.FirstOrDefault();
+                //OptionSetValue agentVerificationStatusOption = orgAgent == null ? new OptionSetValue(0) : new OptionSetValue(1); //0 - not verified; 1 - verified
+                //if (orgAgent != null)
+                //{
+                //    Entity agentContact = createAgentContact(orgAgent, validationReqTransactionId);
+
+                //    if (agentContact != null)
+                //        connectAgentToAccount(accountId, agentContact.Id, agentVerificationStatusOption, validationReqTransactionId);
+                //}
+
+
+
+                return account;
+            }
+            #region Catch
+            catch (Exception e)
+            {
+                string error = $"Error in createOrgForCtp(...). Exception message:{Environment.NewLine}{e.Message}"
+                                + $"{Environment.NewLine}transactionId: {validationReqTransactionId}; ctpOrgId: {ctpOrgEntity["ctpOrgId"]}; tsOrgId: {tsOrgId ?? ""}";
+                DynamicsInterface.writeToLog(error);
+                return null;
+            }
+            #endregion
+
+        }
+
+        public static async Task<Guid> createCaseGeneric(
+                                        string title
+                                        , int caseTypeCode
+                                        , int? type
+                                        , EntityReference customerRef
+                                        , int? caseStatus
+                                        , Guid? qualCodeId
+                                        , Dictionary<string, object> extraCaseFields
+                                        , DataverseClientLib.ServiceClient dataverseClient = null
+                                     )
+        {
+            dataverseClient = dataverseClient ?? DynamicsInterface.DataverseClient;
+
+            Guid caseId = Guid.Empty;
+
+            try
+            {
+                Entity caseEntity = new Entity("incident");
+
+
+                caseEntity["title"] = title;
+                caseEntity["casetypecode"] = new OptionSetValue(caseTypeCode);
+
+                if (type != null)
+                    caseEntity["ts_type"] = new OptionSetValue(type.Value);
+
+                caseEntity["customerid"] = customerRef;
+
+                if (caseStatus != null)
+                    caseEntity["ts_casestatus"] = new OptionSetValue(caseStatus.Value);
+
+                if (qualCodeId != null)
+                    caseEntity["ts_qualificationcodeid"] = new EntityReference("new_qualificationcode", qualCodeId.Value);
+
+
+                if (extraCaseFields != null)
+                {
+                    foreach (KeyValuePair<string, object> caseField in extraCaseFields)
+                    {
+                        assignValueToAttribute(caseEntity, caseField);
+                    }
+                }
+
+                caseId = await dataverseClient.CreateAsync(caseEntity);
+
+            }
+            catch (Exception e)
+            {
+                string error = "Error in createCaseGeneric(...). Exception message: " + Environment.NewLine + e.Message
+                                    + "accountId: " + customerRef.Id.ToString()
+                                ;
+                DynamicsInterface.writeToLog(error);
+
+            }
+
+            return caseId;
+        }
+        public static void assignValueToAttribute(Entity caseEntity, KeyValuePair<string, object> caseField)
+        {
+            try
+            {
+
+                string fieldName = caseField.Key;
+                object fieldValue = caseField.Value;
+
+
+
+                switch (fieldValue)
+                {
+                    case EntityReference entityRef:
+                        caseEntity[fieldName] = entityRef;
+                        break;
+
+                    case OptionSetValue optionSet:
+                        caseEntity[fieldName] = optionSet;
+                        break;
+
+                    case OptionSetValueCollection optionSetCollection:
+                        caseEntity[fieldName] = optionSetCollection;
+                        break;
+
+                    case Money money:
+                        caseEntity[fieldName] = money;
+                        break;
+
+                    case DateTime dateTime:
+                        caseEntity[fieldName] = dateTime;
+                        break;
+
+                    case int intValue:
+                        caseEntity[fieldName] = intValue;
+                        break;
+
+                    case decimal decimalValue:
+                        caseEntity[fieldName] = decimalValue;
+                        break;
+
+                    case double doubleValue:
+                        caseEntity[fieldName] = doubleValue;
+                        break;
+
+                    case bool boolValue:
+                        caseEntity[fieldName] = boolValue;
+                        break;
+
+                    case Guid guidValue:
+                        caseEntity[fieldName] = guidValue;
+                        break;
+
+                    case string stringValue:
+                        caseEntity[fieldName] = stringValue;
+                        break;
+
+                    default:
+                        //caseEntity[fieldName] = TryConvertValue(fieldName, fieldValue);
+                        break;
+                }
+
+
+
+
+            }
+            catch (Exception e)
+            {
+                string error = "Error in assignValueToAttribute(...). Exception message: " + Environment.NewLine + e.Message
+                    ;
+                DynamicsInterface.writeToLog(error);
+
+            }
+
+        }
+
+        public static async Task addLegalAddress(Guid accountId, IDictionary<string, Object> addressLegal                                                                            
+                                                                            , DataverseClientLib.ServiceClient dataverseClient = null)
+        {
+            try
+            {
+                dataverseClient = dataverseClient ?? DynamicsInterface.DataverseClient;
+
+                QueryExpression queryEntity = new QueryExpression("customeraddress");
+                queryEntity.Criteria.AddCondition("parentid", ConditionOperator.Equal, accountId);
+                queryEntity.Criteria.AddCondition("addresstypecode", ConditionOperator.Equal, 5);
+                EntityCollection entityCollection = await dataverseClient.RetrieveMultipleAsync(queryEntity);
+
+                Entity address = null;
+                bool addressExists = false;
+                if (entityCollection.Entities.Count > 0)
+                {
+                    address = entityCollection.Entities.First();
+                    addressExists = true;
+                }
+                else
+                {
+                    address = new Entity("customeraddress");
+                    address["addresstypecode"] = new OptionSetValue(5);
+                    address["parentid"] = new EntityReference("account", accountId);
+                    address["objecttypecode"] = 1;
+                }
+
+
+                address["line1"] = (string)addressLegal["address"];
+                address["line2"] = (string)addressLegal["addressExt"];
+                address["city"] = (string)addressLegal["city"];
+                address["stateorprovince"] = (string)addressLegal["stateRegion"];
+                address["country"] = (string)addressLegal["countryId"];
+
+                string postalCode = (string)addressLegal["postalCode"];
+                address["postalcode"] = postalCode.Length > 20 ? postalCode.Substring(0, 19) : postalCode;
+
+
+                QueryExpression queryFieldMap = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryFieldMap.ColumnSet = new ColumnSet(true);
+                queryFieldMap.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "country");
+                queryFieldMap.Criteria.AddCondition("ts_value", ConditionOperator.Equal, (string)addressLegal["countryId"]);
+                EntityCollection fieldMapCollection = await dataverseClient.RetrieveMultipleAsync(queryFieldMap);
+
+                if (fieldMapCollection.Entities.Count > 0)
+                {
+                    Entity fieldHierarchy = fieldMapCollection.Entities.First();
+                    int countryOptionValue = fieldHierarchy.GetAttributeValue<int>("ts_valuecode");
+                    address["ts_countrydesc"] = new OptionSetValue(countryOptionValue);
+                }
+
+
+                queryFieldMap = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryFieldMap.ColumnSet = new ColumnSet(true);
+                queryFieldMap.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "stateorprovince");
+                queryFieldMap.Criteria.AddCondition("ts_parentfieldvalue", ConditionOperator.Equal, (string)addressLegal["countryId"]);
+                queryFieldMap.Criteria.AddCondition("ts_value", ConditionOperator.Equal, (string)addressLegal["stateRegion"]);
+                fieldMapCollection = await dataverseClient.RetrieveMultipleAsync(queryFieldMap);
+
+                if (fieldMapCollection.Entities.Count > 0)
+                {
+                    Entity fieldHierarchy = fieldMapCollection.Entities.First();
+                    int countryOptionValue = fieldHierarchy.GetAttributeValue<int>("ts_valuecode");
+                    address["ts_stateprovdesc"] = new OptionSetValue(countryOptionValue);
+                }
+
+
+                if (addressExists)
+                {
+                    await dataverseClient.UpdateAsync(address);
+                }
+                else
+                {
+                    Guid addressId = await dataverseClient.CreateAsync(address);
+                }
+            }
+            catch (Exception e)
+            {
+                string error = "Error in addLegalAddress(...). Exception message: " + Environment.NewLine + e.Message
+               ;
+                DynamicsInterface.writeToLog(error);
+            }
+
+        }
+
+        public static dynamic getGenericValidationRequestStatusObject(string validationReqTransactionId)
+        {
+
+            try
+            {
+                DateTime ValidationRequestEnd = DateTime.Now;
+                TimeSpan elapsedTime = ValidationRequestEnd - ValidationRequestEnd.AddMilliseconds(-1);
+
+
+                IDictionary<string, System.Object> validationResponse = new System.Dynamic.ExpandoObject() as IDictionary<string, System.Object>;
+                validationResponse.Add("elapsed", elapsedTime.TotalMilliseconds.ToString("#.00") + " milliseconds");
+                validationResponse.Add("node", "na");
+                validationResponse.Add("status_code", 200);
+
+                IDictionary<string, System.Object> data = new System.Dynamic.ExpandoObject() as IDictionary<string, System.Object>;
+
+
+                List<string> orgList = new List<string>();
+                data.Add("OrgId", orgList);
+                data.Add("Qualification", "Unknown");
+                data.Add("TSOrgId", "");
+                data.Add("ActivityCode", "");
+                data.Add("AgentVerification", "");
+                data.Add("Transaction Phase", "Open");
+                data.Add("Transaction", "Open");
+                data.Add("Timestamp", DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
+                data.Add("OrgTransactionId", validationReqTransactionId);
+                data.Add("TransactionId", validationReqTransactionId);
+
+                validationResponse.Add("data", data);
+
+                string responseBodyId = $"{"ValidationRequest".ToLower()}-{DateTime.UtcNow:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+                string receiptToken = Convert.ToBase64String(Encoding.UTF8.GetBytes(responseBodyId));
+
+                validationResponse.Add("receipt", receiptToken);
+                validationResponse.Add("id", receiptToken);
+                validationResponse.Add("status", "request_processed");
+
+                return (ExpandoObject)validationResponse;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in getGenericValidationRequestStatusObject(...). Exception message:{Environment.NewLine}{e.Message}"
+                                              );
+                return null;
+            }
+
+
+        }
+
+
+        public static async Task sendValidationRequestStatusToRequestor(string validationReqTransactionId, Entity validationRequestCase, Entity validationRequestor)
+        {
+            try
+            {
+
+                string callBackUrl = validationRequestCase.GetAttributeValue<string>("ts_validationrequestcallbackurl");
+
+                if (string.IsNullOrEmpty(callBackUrl))
+                {
+                    DynamicsInterface.writeToLog($"No callback URL provided for transaction id: {validationReqTransactionId}. Cannot send status update to requestor.");
+                    return;
+                }
+
+                dynamic genericValidationResponse = getGenericValidationRequestStatusObject(validationReqTransactionId);
+
+                IDictionary<string, System.Object> transactionIdRelatedValues = await getTransactionIdRelatedValues(validationReqTransactionId);
+
+                bool isPngoPP = !string.IsNullOrEmpty(validationRequestor.GetAttributeValue<string>("ts_tspngocode"));
+
+
+                if (
+                    ((string)transactionIdRelatedValues["qualificationStatus"] == "Qualified" || (string)transactionIdRelatedValues["tsCaseStatusText"] == "OQ - Disqualified")
+                    && transactionIdRelatedValues["ctpOrgId"] != null
+                    )
+                    ((List<string>)genericValidationResponse.data.OrgId).Add((string)transactionIdRelatedValues["ctpOrgId"]);
+
+
+                genericValidationResponse.data.Qualification = transactionIdRelatedValues["qualificationStatus"];
+                if (
+                    ((string)transactionIdRelatedValues["qualificationStatus"] == "Qualified" || (string)transactionIdRelatedValues["tsCaseStatusText"] == "OQ - Disqualified")
+                            && isPngoPP
+                    )
+                {
+                    genericValidationResponse.data.TSOrgId = transactionIdRelatedValues["tsOrgId"];
+                    genericValidationResponse.data.ActivityCode = transactionIdRelatedValues["activityCode"];
+                    genericValidationResponse.data.AgentVerification = transactionIdRelatedValues["agentVerification"];
+                }
+                else
+                {
+                    ((IDictionary<string, System.Object>)genericValidationResponse.data).Remove("TSOrgId");
+                    ((IDictionary<string, System.Object>)genericValidationResponse.data).Remove("ActivityCode");
+                    ((IDictionary<string, System.Object>)genericValidationResponse.data).Remove("AgentVerification");
+                }
+
+
+                string transaction = (string)transactionIdRelatedValues["transactionStatus"] ?? "";
+                string transactionPhase = (string)transactionIdRelatedValues["transactionPhase"] ?? "";
+
+                genericValidationResponse.data.Transaction = transaction;
+
+
+                if (!isPngoPP && transaction.ToLower() == "open")
+                {
+                    if (transactionPhase.ToLower().Contains("disposition"))
+                        transactionPhase = "Started";
+                    else if (transactionPhase.ToLower().Contains("response"))
+                        transactionPhase = "In Process - Awaiting Response";
+                    else
+                        transactionPhase = "In Process";
+                }
+                else if (!isPngoPP && transaction.ToLower() == "closed")
+                {
+                    transactionPhase = "Completed";
+
+                    if ((string)transactionIdRelatedValues["caseResolution"] == "Fraud")
+                        transactionPhase += " - Fraud Detected";
+                }
+
+                ((IDictionary<string, System.Object>)genericValidationResponse.data)["Transaction Phase"] = transactionPhase;
+
+                IDictionary<string, System.Object> returnStatus = new System.Dynamic.ExpandoObject() as IDictionary<string, System.Object>;
+
+                returnStatus.Add("returnStatus", genericValidationResponse);
+                string returnStatusText = JsonConvert.SerializeObject(returnStatus, Newtonsoft.Json.Formatting.Indented);
+
+
+                dynamic response =  await makeHttpPostCall(requestJson: returnStatusText
+                                                           , baseUrl: callBackUrl, endPointPath: ""
+                                                            , queryParams: null
+                                                            );
+
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in sendValidationRequestStatusToRequestor(...). Exception message:{Environment.NewLine}{e.Message}"
+                                            );
+            }
+
+
+        }
+
+        public static async Task<Entity> getValidationRequestAccount(Entity validationRequestCase)
+        {
+            try
+            {
+
+                Guid? qualCaseId = validationRequestCase.GetAttributeValue<EntityReference>("parentcaseid")?.Id;
+
+                Entity qualCase = qualCaseId == null ? null : await DynamicsInterface.DataverseClient.RetrieveAsync("incident", qualCaseId.Value, new ColumnSet(true));
+
+                Guid? orgAccountId = qualCase?.GetAttributeValue<EntityReference>("customerid")?.Id;
+                Entity orgAccount = orgAccountId == null ? null : await DynamicsInterface.DataverseClient.RetrieveAsync("account", orgAccountId.Value, new ColumnSet(true));
+
+                return orgAccount;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog("Error in getValidationRequestAccount(Entity validationRequestCase). Exception message: " + Environment.NewLine + e.Message
+                                                    + Environment.NewLine + "validationReqTransactionId: " + validationRequestCase.GetAttributeValue<string>("ts_validationrequesttransactionid")
+                                                    );
+                return null;
+            }
+        }
+        public static async Task<IDictionary<string, System.Object>> getTransactionIdRelatedValues(string validationReqTransactionId)
+        {
+
+            IDictionary<string, System.Object> transactionIdRelatedValues = new System.Dynamic.ExpandoObject() as IDictionary<string, System.Object>;
+
+            try
+            {
+                Entity validationRequestCase = getCaseForTransactionId(validationReqTransactionId);
+
+                bool caseHasDisposition = DynamicsProcessesHelper.existsSystemNote(" --- Disposition Details --- ", new EntityReference(validationRequestCase.LogicalName, validationRequestCase.Id));
+
+
+                Entity orgAccount = await getValidationRequestAccount(validationRequestCase);
+
+                string logMsg = "getTransactionIdRelatedValues is orgAccount null: " + orgAccount == null ? "yes" : "no";
+
+
+
+                if (orgAccount != null)
+                {
+                    transactionIdRelatedValues["accountId"] = orgAccount.Id.ToString();
+                    transactionIdRelatedValues["tsOrgId"] = orgAccount.GetAttributeValue<string>("accountnumber");
+                    transactionIdRelatedValues["accountOrgName"] = orgAccount.GetAttributeValue<string>("name");
+                    transactionIdRelatedValues["ctpOrgId"] = orgAccount.GetAttributeValue<string>("ts_ctporgid");
+
+                    Entity activityCodeEntity = orgAccount.GetAttributeValue<EntityReference>("new_activitycode") == null ? null
+                                                                                                        : await DynamicsInterface.DataverseClient.RetrieveAsync("new_activitycodes", orgAccount.GetAttributeValue<EntityReference>("new_activitycode").Id, new ColumnSet(true));
+
+                    Entity qualCodeEntity = orgAccount.GetAttributeValue<EntityReference>("new_orgdesignation") == null ? null
+                                                                                                        : await DynamicsInterface.DataverseClient.RetrieveAsync("new_qualificationcode", orgAccount.GetAttributeValue<EntityReference>("new_orgdesignation").Id, new ColumnSet(true));
+
+                    transactionIdRelatedValues["orgActivityCode"] = activityCodeEntity?.GetAttributeValue<string>("new_activitycode");
+                    transactionIdRelatedValues["orgDesignation"] = qualCodeEntity?.GetAttributeValue<string>("new_qualcode");
+                }
+
+                transactionIdRelatedValues["isActivityCodeValid"] = validationRequestCase.GetAttributeValue<bool>("ts_validationdispositionrulesactivitycodevalid");
+                transactionIdRelatedValues["tsCseStatus"] = validationRequestCase.GetAttributeValue<OptionSetValue>("ts_casestatus").Value;
+                transactionIdRelatedValues["dispositionStatus"] = validationRequestCase.GetAttributeValue<string>("ts_validationdispositionstatus");
+                string dispositionProcessingStatus = validationRequestCase.GetAttributeValue<string>("ts_validationdispositionstatus");
+                dispositionProcessingStatus = dispositionProcessingStatus == null ? "" : dispositionProcessingStatus.ToLower().Trim();
+                transactionIdRelatedValues["selfReportedActivityCode"] = validationRequestCase.GetAttributeValue<string>("ts_validationselfreportedactivitycode");
+                transactionIdRelatedValues["agentEmail"] = validationRequestCase.GetAttributeValue<string>("ts_validationagentemail");
+                transactionIdRelatedValues["agentName"] = validationRequestCase.GetAttributeValue<string>("ts_validationagentname");
+                transactionIdRelatedValues["tsCaseStatusText"] = validationRequestCase.FormattedValues["ts_casestatus"];
+
+
+                dynamic transactionIdAttributes = (ExpandoObject)transactionIdRelatedValues;
+
+
+                string tsCaseStatusTextShort = transactionIdAttributes.tsCaseStatusText.Replace("OQ - ", "").Replace("AutoValidation - ", "");
+
+                transactionIdAttributes.activityCode = transactionIdAttributes.tsCaseStatusText == "OQ - Qualified" && transactionIdAttributes.orgActivityCode != null ? transactionIdAttributes.orgActivityCode : null;
+                transactionIdAttributes.orgName = transactionIdAttributes.tsCaseStatusText == "OQ - Qualified" && transactionIdAttributes.accountOrgName != null ? transactionIdAttributes.accountOrgName : validationRequestCase.GetAttributeValue<string>("ts_validationrequestlegalname");
+                transactionIdAttributes.agentVerification = validationRequestCase.Contains("ts_validationrequestagentverification") ? validationRequestCase.FormattedValues["ts_validationrequestagentverification"] : "Not Verified";
+
+
+
+                transactionIdAttributes.qualificationStatus = "Not Qualified";
+                transactionIdAttributes.transactionStatus = "Open";
+                transactionIdAttributes.transactionPhase = tsCaseStatusTextShort;
+
+                int caseResolution = validationRequestCase.GetAttributeValue<OptionSetValue>("ts_caseresolution")?.Value ?? -1;
+                transactionIdAttributes.caseResolution = validationRequestCase.GetAttributeValue<OptionSetValue>("ts_caseresolution") == null ? "" : validationRequestCase.FormattedValues["ts_caseresolution"];
+
+                if (transactionIdAttributes.tsCaseStatusText == "OQ - AutoValidation - Awaiting Disposition" && transactionIdAttributes.dispositionStatus == "completed")
+                    transactionIdAttributes.transactionPhase = "Disposition received";
+
+
+                string[] closingCaseStatuses = { "OQ - Qualified", "OQ - Disqualified", "OQ - Cancelled", "OQ - Closed", "OQ - Abandoned", "OQ - Expired", "OQ - Rejected" };
+                if (closingCaseStatuses.Contains((string)transactionIdAttributes.tsCaseStatusText))
+                {
+                    transactionIdAttributes.transactionPhase = "Closed";
+                    transactionIdAttributes.transactionStatus = "Closed";
+
+                    if (transactionIdAttributes.tsCaseStatusText == "OQ - Qualified")
+                        transactionIdAttributes.qualificationStatus = "Qualified";
+
+                }
+
+                transactionIdRelatedValues = (ExpandoObject)transactionIdAttributes as IDictionary<string, System.Object>;
+
+                return transactionIdRelatedValues;
+            }
+            catch (Exception e)
+            {
+                string error = $"Error in getTransactionIdRelatedValues(...). Exception message:{Environment.NewLine}{e.Message}";
+                DynamicsInterface.writeToLog(error);
+                return null;
+            }
+
+
+
+
+        }
+        public static DateTime convertTimestampToDatetime(long unixTimestampMilliseconds)
+        {
+            DateTime unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            return unixEpoch.AddMilliseconds(unixTimestampMilliseconds);
+        }
+
+        public static string cleanCtpString(string fieldValue)
+        {
+            fieldValue = fieldValue == null ? null :
+                                            (fieldValue.Trim() == "nil" ? "" : fieldValue.Trim());
+
+            return fieldValue;
+        }
         public static Guid? getMailBoxQueueId(string queueName)
         {
             try
             {
+                dynamic defaultMailboxQueue = null;
+                if (string.IsNullOrEmpty(queueName))
+                {
+                    defaultMailboxQueue = getDefaultMailboxQueueId();
+                    return defaultMailboxQueue.queueId;
+                }
                 QueryExpression queryEntity = new QueryExpression("queue");
                 queryEntity.Criteria.AddCondition("name", ConditionOperator.Equal, queueName);
                 EntityCollection entityCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryEntity);
@@ -2462,7 +4197,7 @@ namespace DynamicsProcesses
                 if (entityCollection.Entities.Count > 0)
                     return entityCollection.Entities.First().Id;
 
-                dynamic defaultMailboxQueue = getDefaultMailboxQueueId();
+                defaultMailboxQueue = getDefaultMailboxQueueId();
                 return defaultMailboxQueue.queueId;
 
             }
@@ -2513,114 +4248,7 @@ namespace DynamicsProcesses
             return defaultMailboxQueue;
         }
 
-        public static bool? findExistingAccount(Entity validationRequestCase, Entity account, string validationReqTransactionId, string queueName, Entity valReqOrgEntity, IDictionary<string, Object> dispositionRequest)
-        {
-            bool existsAccount = false;
-            try
-            {
-                #region AutomatedValDefinition
-                string duplicateReviewQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.duplicateReviewQueue;
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                        Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                        validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid")?.ToLower()?.Replace("gb","uk")
-                                                                                                        )?.FirstOrDefault();
-
-
-                duplicateReviewQueue = countryAutomatedValDefinition == null ? duplicateReviewQueue : countryAutomatedValDefinition.duplicateReviewQueue;
-                #endregion
-
-                #region Search Matches
-                //Entity accountEntity = getAccountEntityFromValidationRequestCase(validationRequestCase, validationReqTransactionId, dispositionRequest);
-
-                string name = valReqOrgEntity.GetAttributeValue<string>("name");
-                string legalIdentifier = valReqOrgEntity.GetAttributeValue<string>("new_legalidentifier");
-                string addressLine1 = valReqOrgEntity.GetAttributeValue<string>("address1_line1");
-                string addressPostalCode = valReqOrgEntity.GetAttributeValue<string>("address1_postalcode");
-                addressPostalCode = addressPostalCode.Length < 5 ? addressPostalCode.Substring(0, addressPostalCode.Length) : addressPostalCode.Substring(0, 5);
-                string addressCountryCode = valReqOrgEntity.GetAttributeValue<string>("address1_country");
-
-                Entity matchingAccount = DynamicsProcessesHelper.findMatchAccount(name, legalIdentifier, addressLine1, addressPostalCode, addressCountryCode, accountId: null);
-                #endregion
-
-
-                if (matchingAccount != null)
-                {
-                    #region HandlingAccountFound
-                    existsAccount = true;
-                    Entity qualCase = DynamicsProcessesHelper.retrieveOrgQualCase(matchingAccount);
-
-                    if (qualCase == null)
-                        return null;
-
-                   
-                    validationRequestCase["parentcaseid"] = new EntityReference(qualCase.LogicalName, qualCase.Id);
-                    DynamicsInterface.DataverseClient.Update(validationRequestCase);
-
-
-                    IDictionary<string, Object> AgentContact = getAgentContact(validationRequestCase, matchingAccount, validationReqTransactionId, dispositionRequest);
-
-                    string agentContactVerificationStatusText = AgentContact.ContainsKey("agentVerifcationStatusText") ? (string)AgentContact["agentVerifcationStatusText"] : "";
-                                                                    
-                    string valReqAgentValidationStatusText = validationRequestCase.GetAttributeValue<OptionSetValue>("ts_validationrequestagentverification") == null ? "" 
-                                                                                                                                    : validationRequestCase.FormattedValues["ts_validationrequestagentverification"];
-
-                    #endregion
-
-                    #region Org & Agent Valid
-                    int? tsQualCaseStatus = qualCase.GetAttributeValue<OptionSetValue>("ts_casestatus")?.Value;
-
-                    if (
-                            (
-                            tsQualCaseStatus != null && tsQualCaseStatus == 102056 //102056 - OQ - Qualified
-                            && agentContactVerificationStatusText == "Verified"
-                            )
-                        )
-                    {
-                        validationRequestCase["ts_casestatus"] = qualCase.GetAttributeValue<OptionSetValue>("ts_casestatus");
-                        DynamicsInterface.DataverseClient.Update(validationRequestCase);
-                        string postAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postAutoCloseQueue;
-                        DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postAutoCloseQueue);
-
-                        return existsAccount;
-                    }
-                    #endregion
-
-                    #region Handle Agent Not Found - Found But Not With Org
-                    
-
-                    string dupesNoteDesc = "An existing org has been found for this Validation Request: " + Environment.NewLine + Environment.NewLine;
-                    dupesNoteDesc += "TSOrgId: " + matchingAccount.GetAttributeValue<string>("accountnumber") + Environment.NewLine + Environment.NewLine;
-                    dupesNoteDesc += "Routing case to Duplicate Review queue";
-                    processSystemNote("An Org Match Has Been Found", dupesNoteDesc, new EntityReference(validationRequestCase.LogicalName, validationRequestCase.Id));
-
-
-                    validationRequestCase["ts_casestatus"] = new OptionSetValue(104696); //OQ - AutoValidation - Duplicate Review
-                    DynamicsInterface.DataverseClient.Update(validationRequestCase);
-
-                    if (!string.IsNullOrEmpty(duplicateReviewQueue))
-                        DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, duplicateReviewQueue);
-
-                    #endregion
-
-
-                }
-
-
-                return existsAccount;
-
-
-
-               
-            }
-            catch (Exception e)
-            {
-                DynamicsInterface.writeToLog("Error in findExistingAccount(...). Exception message: " + Environment.NewLine + e.Message
-                                                + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
-                                                );
-                return null;
-            }
-
-        }
+        
 
         public static bool updateValidationRequestCaseStatus(Entity validationRequestCase, int validationRequestCaseStatus, string validationReqTransactionId)
         {
@@ -2641,9 +4269,12 @@ namespace DynamicsProcesses
 
                 Entity qualCase = DynamicsInterface.DataverseClient.Retrieve(parentCaseRef.LogicalName, parentCaseRef.Id, new ColumnSet("ts_casestatus"));
 
-                qualCase["ts_casestatus"] = new OptionSetValue(validationRequestCaseStatus); //102056 - 'OQ - Qualified'
-                DynamicsInterface.DataverseClient.Update(qualCase);
-
+                int qualCaseStatus = qualCase.GetAttributeValue<OptionSetValue>("ts_casestatus")?.Value ?? -1;
+                if (qualCaseStatus != validationRequestCaseStatus)
+                {
+                    qualCase["ts_casestatus"] = new OptionSetValue(validationRequestCaseStatus); //102056 - 'OQ - Qualified'
+                    DynamicsInterface.DataverseClient.Update(qualCase);
+                }
                 //Entity validationRequestCase = ValidationServicesHelper.getCaseForTransactionId(validationReqTransactionId);
                 //validationRequestCase["ts_statusopenclosed"] = new OptionSetValue(1);
                 //DynamicsInterface.DataverseClient.Update(validationRequestCase);
@@ -2926,7 +4557,6 @@ namespace DynamicsProcesses
 
         public static async Task<EntityCollection> findEntityeGenericFilterInAndOut(string entityLogicalName, Dictionary<string, object> filterFieldsIn, Dictionary<string, object> filterFieldsOut)
         {
-            Entity caseEntity = null;
             try
             {
                 QueryExpression queryEntity = new QueryExpression(entityLogicalName);
@@ -2957,7 +4587,7 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in findCaseGenericFilterInAndOut(...). Exception message: " + Environment.NewLine + e.Message);
+                DynamicsInterface.writeToLog("Error in findEntityeGenericFilterInAndOut(...). Exception message: " + Environment.NewLine + e.Message);
                 return null;
             }
 

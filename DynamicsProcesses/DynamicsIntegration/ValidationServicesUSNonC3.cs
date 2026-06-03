@@ -86,60 +86,18 @@ namespace DynamicsProcesses
             {
 
                 #region AutomatedValDefinition
-                string postAutoValidationQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.config.postAutoValidationQueue == null ? "AutoValidation Inconclusive"
-                                                                                                                                                    : DynamicsProcessesValidationServices.AutomatedValDefinition.config.postAutoValidationQueue;
-                string postAutoValidationQueueHighPriority = DynamicsProcessesValidationServices.AutomatedValDefinition.config.postAutoValidationQueueHighPriority;
-                string outreachQueueName = DynamicsProcessesValidationServices.AutomatedValDefinition.emailOutreachProcess.queueName;
-                string outreachQueueHighPriority = DynamicsProcessesValidationServices.AutomatedValDefinition.emailOutreachProcess.queueNameHighPriority;
+                bool autoCloseEnabled = DynamicsProcessesValidationServices.ConfigParams.autoCloseEnabled;
+                string initialQueue = DynamicsProcessesValidationServices.ConfigParams.initialQueue;
+                string postAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postAutoCloseQueue;
+                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postNoAutoCloseQueue;
+                string outreachQueueName = DynamicsProcessesValidationServices.ConfigParams.outreachQueueName;
 
-                string validationServicesInitialQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.initialQueue;
-
-                string postAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postAutoCloseQueue;
-                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postNoAutoCloseQueue;
-
-
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                        Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                       validationRequestCase.GetAttributeValue<string>("ts_validationrequestaddresscountryid")?.ToLower()?.Replace("gb", "uk")
-                                                                                                        )?.FirstOrDefault();
-
-                postNoAutoCloseQueue = countryAutomatedValDefinition?.postNoAutoCloseQueue ?? postNoAutoCloseQueue;
-
-                string postAutoCloseNonC3Queue =
-                               (
-                                   ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                           Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                               )?.postAutoCloseQueue;
-
-
-                postAutoCloseNonC3Queue = postAutoCloseNonC3Queue ?? postAutoCloseQueue;
-
-
-                string postNoAutoCloseNonC3Queue =
-                               (
-                                   ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                           Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                               )?.postNoAutoCloseQueue;
-
-
-                postNoAutoCloseNonC3Queue = postNoAutoCloseNonC3Queue ?? postNoAutoCloseQueue;
-
-
-
-
-                bool validationServicesAutoCloseEnabled = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.autoCloseEnabled;
-
-                bool? nonC3AutoCloseEnabled =
-                (
-                                  ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                          Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                              )?.autoCloseEnabled;
-
-                nonC3AutoCloseEnabled = nonC3AutoCloseEnabled ?? validationServicesAutoCloseEnabled;
+                bool closoeAbandonedRequests = DynamicsProcessesValidationServices.ConfigParams.closeAbandonedRequests;
+                int numberOfDaysInQueueToCloseAbandoned = DynamicsProcessesValidationServices.ConfigParams.numberOfDaysInQueueToCloseAbandoned;
                 #endregion
 
 
-                
+
                 #region Parameters
                 IDictionary<string, Object> valReqOrgAccountObj = await ValidationServicesHelper.getValidationRequestOrgAccountInfo(validationReqTransactionId);
                 #endregion
@@ -147,7 +105,7 @@ namespace DynamicsProcesses
 
 
                 #region InitialQueue
-                if (queueName == validationServicesInitialQueue)
+                if (queueName == initialQueue)
                 {
                     #region Catch Validation Requests That Already Have Org Account
                     if (valReqOrgAccountObj["tsOrgId"] != null)
@@ -156,13 +114,7 @@ namespace DynamicsProcesses
 
                  
 
-                    #region Fraud Check
-                    bool? potentialFraud = await ValidationServicesUSNonC3.validationServicesEvaluateForFraudSimplified(validationRequestCase, account, validationReqTransactionId);
-
-                    if (potentialFraud == null || potentialFraud.Value)
-                        return;
-                    #endregion
-
+                    
 
 
                     #region nonC3 Subsection Mismatch Checks
@@ -189,7 +141,7 @@ namespace DynamicsProcesses
 
                             validationRequestCase["ts_casestatus"] = new OptionSetValue(102057);//OQ - Disqualified
                             DynamicsInterface.DataverseClient.Update(validationRequestCase);
-                            DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postAutoCloseNonC3Queue);
+                            DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postAutoCloseQueue);
 
                         }
                         else
@@ -204,7 +156,7 @@ namespace DynamicsProcesses
 
                             validationRequestCase["ts_casestatus"] = new OptionSetValue(102057);//OQ - Disqualified
                             DynamicsInterface.DataverseClient.Update(validationRequestCase);
-                            DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postAutoCloseNonC3Queue);
+                            DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postAutoCloseQueue);
                         }
 
                         return;
@@ -216,10 +168,19 @@ namespace DynamicsProcesses
                         {
                             validationRequestCase["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
                             DynamicsInterface.DataverseClient.Update(validationRequestCase);
-                            DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postNoAutoCloseNonC3Queue);
+                            DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postNoAutoCloseQueue);
                             return;
                         }
                     }
+                    #endregion
+
+
+
+                    #region Fraud Check
+                    bool? potentialFraud = await ValidationServicesUSNonC3.validationServicesEvaluateForFraudSimplified(validationRequestCase, account, validationReqTransactionId);
+
+                    if (potentialFraud == null || potentialFraud.Value)
+                        return;
                     #endregion
 
 
@@ -236,7 +197,7 @@ namespace DynamicsProcesses
 
 
                     #region AutoClose
-                    if (nonC3AutoCloseEnabled.Value)
+                    if (autoCloseEnabled)
                     {
 
                         bool isOrgValid = validationRequestCase.GetAttributeValue<bool>("ts_validationdispositionrulesorgvalid");
@@ -303,20 +264,13 @@ namespace DynamicsProcesses
             try
             {
                 #region AutomatedValDefinition & Parameters
-                List<dynamic> autoCloseCustomeRules = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.config.autoCloseCustomRules)?.ToList<dynamic>();
-                List<dynamic> queueRoutingRules = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.queueRoutingRules)?.ToList<dynamic>();
+                List<dynamic> autoCloseCustomeRules = ((JArray)DynamicsProcessesValidationServices.ConfigJson.config.autoCloseCustomRules)?.ToList<dynamic>();
+                List<dynamic> queueRoutingRules = ((JArray)DynamicsProcessesValidationServices.ConfigJson.queueRoutingRules)?.ToList<dynamic>();
 
                 List<dynamic> currentQueueRoutingRules = queueRoutingRules?.Where(rule => rule.routeFromQueue == queueName)?.ToList();
 
-                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postNoAutoCloseQueue;
 
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                       Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                       ((string)dispositionRequest["AddressCountryId"])?.ToLower()?.Replace("gb", "uk")
-                                                                                                       )?.FirstOrDefault();
-
-
-                postNoAutoCloseQueue = countryAutomatedValDefinition?.postNoAutoCloseQueue ?? postNoAutoCloseQueue;
+                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postNoAutoCloseQueue;
                 #endregion
 
 
@@ -364,20 +318,11 @@ namespace DynamicsProcesses
             bool emailOutreachCriteria = false;
             try
             {
+                
                 #region AutomatedValDefinition
-                dynamic countryAutomatedValDefinition = ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.countries)?.ToList<dynamic>()?.
-                                                                                                       Where(country => ((string)country.country)?.ToLower() ==
-                                                                                                                                       ((string)dispositionRequest["AddressCountryId"])?.ToLower()?.Replace("gb", "uk")
-                                                                                                       )?.FirstOrDefault();
-
-
-
-
-                bool autoOrgEmailOutreachEnabled = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.emailOutreachProcess.autoOrgOutreachEnabled == null ? false
-                                                                                                            : DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.emailOutreachProcess.autoOrgOutreachEnabled;
-
-
-                autoOrgEmailOutreachEnabled = countryAutomatedValDefinition?.emailOutreachProcess?.autoOrgOutreachEnabled ?? autoOrgEmailOutreachEnabled;
+                bool autoOrgEmailOutreachEnabled = DynamicsProcessesValidationServices.ConfigParams.autoOrgOutreachEnabled;
+                bool skipEmailOutreachIfArtifactPresent = DynamicsProcessesValidationServices.ConfigParams.skipEmailOutreachIfArtifactPresent;
+                int artifactWaitTimeMinutes = DynamicsProcessesValidationServices.ConfigParams.artifactWaitTimeMinutes;
 
 
                 if (!autoOrgEmailOutreachEnabled)
@@ -575,7 +520,7 @@ namespace DynamicsProcesses
 
                 string validationRequestEmail = validationRequestCase.GetAttributeValue<string>("ts_validationrequestemail");
                 Entity toparty = new Entity("activityparty");
-                toparty["addressused"] = DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] == "prod" ? validationRequestEmail : "franciscocastellanos@yahoo.com";
+                toparty["addressused"] = DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] == "prod" ? validationRequestEmail : "test@example.com";
                 toParties.Entities.Add(toparty);
 
                 email["from"] = fromParties;
@@ -765,20 +710,8 @@ namespace DynamicsProcesses
 
                 Entity template = DynamicsProcessesHelper.getTemplateEntity(templateName);
 
-                string outreachQueueName = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.emailOutreachProcess.queueName;
-                string outreachQueueHighPriority = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.emailOutreachProcess.queueNameHighPriority;
-
-                string nonC3OutreachQueueName =
-                                            (
-                                                ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                                        Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                                            )?.emailOutreachProcess?.queueName;
-
-                string nonC3OutreachQueueHighPriority =
-                                            (
-                                                ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                                        Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                                            )?.emailOutreachProcess?.queueNameHighPriority;
+                string outreachQueueName = DynamicsProcessesValidationServices.ConfigParams.outreachQueueName;
+                string outreachQueueHighPriority = DynamicsProcessesValidationServices.ConfigParams.outreachQueueHighPriority;
 
                 #endregion
 
@@ -825,7 +758,7 @@ namespace DynamicsProcesses
                 
                 string validationRequestEmail = validationRequestCase.GetAttributeValue<string>("ts_validationrequestemail");
                 Entity toparty = new Entity("activityparty");
-                toparty["addressused"] = DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] == "prod" ? validationRequestEmail : "franciscocastellanos@yahoo.com";
+                toparty["addressused"] = DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] == "prod" ? validationRequestEmail : "test@example.com";
                 toParties.Entities.Add(toparty);
 
                 email["from"] = fromParties;
@@ -862,7 +795,7 @@ namespace DynamicsProcesses
                         validationRequestCase["ts_casestatus"] = new OptionSetValue(104698); //OQ - AutoValidation - Awaiting Customer Response
                         DynamicsInterface.DataverseClient.Update(validationRequestCase);
 
-                        string nextQueue = nonC3OutreachQueueName;
+                        string nextQueue = outreachQueueName;
                         if (nextQueue != queueName)
                             DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, nextQueue);
                     }
@@ -883,29 +816,8 @@ namespace DynamicsProcesses
             try
             {
                 #region AutomatedValDefinition & Parameters
-                
-
-
-                string postAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postAutoCloseQueue;
-
-
-                string nonC3PostNoAutoCloseQueue =
-                                            (
-                                                ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                                        Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                                            )?.postNoAutoCloseQueue;
-
-
-
-                string nonC3PostAutoCloseQueue =
-                                    (
-                                        ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                                Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                                    )?.postAutoCloseQueue;
-
-
-                postAutoCloseQueue = nonC3PostAutoCloseQueue ?? postAutoCloseQueue;
-
+                string postAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postAutoCloseQueue;
+                string postNoAutoCloseQueue = DynamicsProcessesValidationServices.ConfigParams.postNoAutoCloseQueue;
                 #endregion
 
 
@@ -922,7 +834,7 @@ namespace DynamicsProcesses
                 {
                     DynamicsInterface.writeToLog("orgAccount is null after createUpdateOrgFromValReq(...)");
 
-                    string postNoAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postNoAutoCloseQueue;//<==== This is where it's happpening
+                    
                     validationRequestCase["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
                     DynamicsInterface.DataverseClient.Update(validationRequestCase);
                     DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postNoAutoCloseQueue);
@@ -1007,7 +919,6 @@ namespace DynamicsProcesses
 
                 if (orgAccount == null || agentContact == null)
                 {
-                    string postNoAutoCloseQueue = DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices.postNoAutoCloseQueue;
                     validationRequestCase["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
                     DynamicsInterface.DataverseClient.Update(validationRequestCase);
                     DynamicsProcessesHelper.addCaseToQueue(validationRequestCase.Id, postNoAutoCloseQueue);
@@ -1197,8 +1108,9 @@ namespace DynamicsProcesses
             try
             {
                 #region Calling Score Matrix API
-                string CTPUrl = "https://tsvc.tsgctp.org/";
-                string CTPSessionKey = "61695af7-1652-4b08-b786-192de1884f61";
+                string ctpUrl = "https://tsvc.tsgctp.org/";
+                string ctpSessionKey = ValidationServicesHelper.CTPSessionKey;
+                //"61695af7-1652-4b08-b786-192de1884f61";
                 string endPointPath = "services/vsscorematrix/v_001/";
 
                 Dictionary<string, string> queryParams = new Dictionary<string, string>();
@@ -1206,8 +1118,8 @@ namespace DynamicsProcesses
 
 
                 dynamic dispositionResponse = ValidationServicesHelper.makeHttpGetCall(
-                                                                                        CTPUrl, endPointPath
-                                                                                        , CTPSessionKey, queryParams
+                                                                                        ctpUrl, endPointPath
+                                                                                        , ctpSessionKey, queryParams
                                                                                         );
 
 

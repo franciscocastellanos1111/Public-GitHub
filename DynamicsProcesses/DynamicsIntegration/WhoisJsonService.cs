@@ -17,7 +17,7 @@ namespace DynamicsProcesses
         public WhoisJsonService()
         {
             _httpClient = new HttpClient();
-            _apiKey = "76855763a3f8806f755e33aa9ff00450edf5e2e75db2319506797de7bb0d94a4";
+            _apiKey = System.Configuration.ConfigurationManager.AppSettings["WhoisJsonApiKey"];
         }
 
         public async Task<WhoisResult> GetWhoisDataAsync(string domain)
@@ -420,9 +420,7 @@ namespace DynamicsProcesses
             _httpClient?.Dispose();
         }
 
-        /// <summary>
-        /// Test method to verify WhoisJSON API connectivity and authentication
-        /// </summary>
+       
         public static async Task<bool> TestWhoisApiAsync(string testDomain = "google.com")
         {
             try
@@ -450,9 +448,7 @@ namespace DynamicsProcesses
             }
         }
 
-        /// <summary>
-        /// Test method to verify WhoisJSON NSLookup API connectivity
-        /// </summary>
+       
         public static async Task<bool> TestDnsLookupApiAsync(string testDomain = "google.com")
         {
             try

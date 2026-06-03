@@ -44,9 +44,27 @@ namespace DynamicsProcesses
 
         public static string LogName = "log";
 
+        public static bool VerboseLog = false;
+
         public static List<string> errorStack;
 
         public static string[] Args = null;
+
+
+        public static Dictionary<string, string> DynamicsEnvironments = new Dictionary<string, string>()
+        {
+            { "dev" , "https://org90a61c80.crm.dynamics.com" },
+            { "qa", "https://tsdynamicsqa.crm.dynamics.com"},
+            { "stage" , "https://tsdynamicsstage.crm.dynamics.com" },
+            { "prod" , "https://techsoup.crm.dynamics.com" },
+            { "https://org90a61c80.crm.dynamics.com" , "dev" },
+            { "https://tsdynamicsqa.crm.dynamics.com", "qa"},
+            {  "https://tsdynamicsstage.crm.dynamics.com" , "stage"},
+            { "https://techsoup.crm.dynamics.com" , "prod" }
+
+        };
+
+        public static List<string> ErrorStack;
         static async Task Main(string[] args)
         {
 
@@ -58,6 +76,9 @@ namespace DynamicsProcesses
                 Args = args;
 
                 string process = args[0];
+
+                if (Args.Contains("verbose"))
+                    VerboseLog = true;
 
                 //foreach (string arg in args)
                 //{
@@ -73,6 +94,13 @@ namespace DynamicsProcesses
                 string azureStorage7C = ConfigurationManager.AppSettings["AzureStorage7C"];
 
                 ParallelProcessesHelper.SemaphoreClient = ParallelProcessesHelper.getTableClientAsync(azureStorage7C);
+
+
+                if (DynamicsEnvironments.ContainsKey(DynamicsInterface.DynamicsEnvironment))
+                {
+                    string DynamicsEnvironmentCurrentName = DynamicsEnvironments[DynamicsInterface.DynamicsEnvironment];
+                    DynamicsEnvironments["DynamicsEnvironmentCurrent"] = DynamicsEnvironmentCurrentName;
+                }
 
 
                 switch (process)
@@ -270,113 +298,7 @@ namespace DynamicsProcesses
         }
 
 
-        public static void processNonC3EligibilityVerifiedEmail_SendEmailFromTemplateRequest(Entity account)
-        {
-            try
-            {
-
-
-                string ein = account.GetAttributeValue<string>("new_legalidentifier");
-                string orgEmail = account.GetAttributeValue<string>("emailaddress1");
-                string tsOrgId = account.GetAttributeValue<string>("accountnumber");
-                string orgName = account.GetAttributeValue<string>("name");
-
-                string orgHashBase64UrlEncoded = getHashBase64UrlEncoded(ein, orgEmail, tsOrgId);
-
-
-
-
-
-                string nonC3VerifiedEmailTemplate =
-                                            (
-                                                ((JArray)DynamicsProcessesValidationServices.AutomatedValDefinition.validationServices?.orgDesignations)?.ToList<dynamic>()?.
-                                                                                                                                                                        Where(country => ((string)country.country)?.ToLower() == "us")?.FirstOrDefault()
-                                            )?.emailOutreachProcess?.orgDesignationVerifiedEmailTemplate;
-
-
-
-
-                Entity templateEntity = DynamicsProcessesHelper.getTemplateEntity(nonC3VerifiedEmailTemplate);
-
-                if (DynamicsProcessesValidationServices.DynamicsEnvironments.ContainsKey(DynamicsInterface.DynamicsEnvironment))
-                {
-                    string DynamicsEnvironmentCurrentName = DynamicsProcessesValidationServices.DynamicsEnvironments[DynamicsInterface.DynamicsEnvironment];
-                    DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] = DynamicsEnvironmentCurrentName;
-                }
-
-
-
-
-
-                Entity email = new Entity("email");
-
-                QueryExpression queryEntity = new QueryExpression("queue");
-                queryEntity.Criteria.AddCondition("name", ConditionOperator.Equal, "Support");
-                EntityCollection entityCollection = DataverseClient.RetrieveMultiple(queryEntity);
-
-                if (entityCollection.Entities.Count == 0)
-                {
-                    writeToLog("At processNonC3EligibilityVerifiedEmail(). No maibox Queue found with name: " + "Support");
-                    return;
-                }
-
-                Guid queueId = entityCollection.Entities.First().Id;
-
-                EntityCollection fromParties = new EntityCollection();
-                Entity fromQueue = new Entity("activityparty");
-                fromQueue["partyid"] = new EntityReference("queue", queueId);
-                fromParties.Entities.Add(fromQueue);
-
-
-
-                EntityCollection toParties = new EntityCollection();
-                Entity toparty = new Entity("activityparty");
-                if (DynamicsProcessesValidationServices.DynamicsEnvironments["DynamicsEnvironmentCurrent"] == "prod")
-                {                    
-                    toparty["partyid"] = new EntityReference("account", account.Id);
-                    toParties.Entities.Add(toparty);
-                }
-                else
-                {
-                    toparty["addressused"] = "franciscocastellanos@yahoo.com";
-                    toParties.Entities.Add(toparty);
-                }
-
-
-                email["from"] = fromParties;
-                email["to"] = toParties;
-
-
-                email["subject"] = "To be replaced";
-                email["description"] = "To be replaced";
-                email["directioncode"] = true;
-
-                SendEmailFromTemplateRequest request = new SendEmailFromTemplateRequest()
-                {
-                    Target = email,
-                    TemplateId = templateEntity.Id,
-                    RegardingId = account.Id,
-                    RegardingType = "account"
-
-                };
-
-                SendEmailFromTemplateResponse response = (SendEmailFromTemplateResponse)DynamicsInterface.DataverseClient.Execute(request);
-
-
-                //email["regardingobjectid"] = new EntityReference("account", account.Id);
-
-                //Guid emailId = DataverseClient.Create(email);
-
-
-               
-            }
-            catch (Exception e)
-            {
-                writeToLog("Error in processNonC3EligibilityVerifiedEmail(...). Exception message: " + Environment.NewLine + e.Message
-                    );
-            }
-        }
-
+        
 
         public static void processNonC3EligibilityVerifiedEmail(Entity account)
         {

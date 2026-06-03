@@ -388,10 +388,7 @@ namespace DynamicsProcesses
             return entities;
         }
 
-        /// <summary>
-        /// [DEPRECATED - kept for reference] Parses legacy v1.0 Dataverse Search API response and converts results to Entity objects,
-        /// filtering only for the specified entity type.
-        /// </summary>
+        
         private List<Entity> ParseSearchResultsFilterByEntity(string responseJson, string entityName)
         {
             var entities = new List<Entity>();

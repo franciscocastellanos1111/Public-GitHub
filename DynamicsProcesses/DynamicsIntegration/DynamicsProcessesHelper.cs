@@ -97,32 +97,48 @@ namespace DynamicsProcesses
 
 
 
-        public static string regexReplace(string pattern, string expresion, string replaceWith)
+        public static string regexReplace(string pattern, string expresion, string replaceWith, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
             string convExpresion = expresion;
 
-            Regex regexObj = new Regex(pattern);
-            convExpresion = regexObj.Replace(convExpresion, replaceWith);
+            Regex regexObj = new Regex(pattern, regexOptions);
+            convExpresion = regexObj.Replace(expresion, replaceWith);
 
             return convExpresion;
         }
 
-
-        public static string regexMatchValue(string pattern, string input, int startAt)
+        public static bool regexMatch(string pattern, string input, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regexObj = new Regex(@pattern);
+            Regex regex = new Regex(pattern, regexOptions);
+            return regex.IsMatch(input);
+        }
+
+        public static int regexMatchPos(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
+        {
+            Regex regexObj = new Regex(pattern, regexOptions);
+
+            Match match = regexObj.Match(input, startAt);
+
+            return match.Index;
+        }
+
+        public static string regexMatchValue(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
+        {
+            Regex regexObj = new Regex(pattern, regexOptions);
 
             Match match = regexObj.Match(input, startAt);
 
             return match.Value;
         }
 
-        public static bool regexMatch(string pattern, string input)
+        public static bool regexMatchSuccess(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regex = new Regex(@pattern);
-            return regex.IsMatch(input);
-        }
+            Regex regexObj = new Regex(pattern, regexOptions);
 
+            Match match = regexObj.Match(input, startAt);
+
+            return match.Success;
+        }
 
 
         public static Dictionary<string, string> GetEnvironmentVariables()
@@ -183,6 +199,81 @@ namespace DynamicsProcesses
                 queryEntity.Criteria.AddCondition("name", ConditionOperator.Equal, queueName);
                 EntityCollection entityCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryEntity);
 
+                Guid queueId = Guid.Empty;
+                if (entityCollection.Entities.Count == 0)
+                {
+                    queueId = createQueue(queueName);
+
+                    if (queueId == Guid.Empty)
+                        return;
+                }
+                else
+                {
+                    queueId = entityCollection.Entities.First().Id;
+                }
+
+                AddToQueueRequest request = new AddToQueueRequest()
+                {
+                    Target = new EntityReference("incident", caseId),
+                    DestinationQueueId = queueId
+                };
+
+                AddToQueueResponse response = (AddToQueueResponse)DynamicsInterface.DataverseClient.Execute(request);
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in addCaseToQueue(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}caseId: {caseId.ToString()}; queueName: {queueName}"
+                                                );
+            }
+        }
+
+        public static Guid createQueue(string queueName)
+        {
+            Guid queueId = Guid.Empty;
+            try
+            {
+                QueryExpression queryQueue = new QueryExpression("queue");
+                queryQueue.Criteria.AddCondition("name", ConditionOperator.Equal, queueName);
+                EntityCollection queueCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryQueue);
+
+                if (queueCollection.Entities.Count == 0)
+                {
+                    Entity queue = new Entity("queue");
+
+                    queue["name"] = queueName; // "Membership";//Automated Validation";//NGOkSlackOQ";// efulfillment";
+                    queue["incomingemaildeliverymethod"] = new OptionSetValue(0);//0 none; 2 - Server-Side Synchronization or Email Router
+                    queue["incomingemailfilteringmethod"] = new OptionSetValue(0); //0	All email messages
+                    queue["outgoingemaildeliverymethod"] = new OptionSetValue(0);//0 none; 2 - Server-Side Synchronization or Email Router
+                    queue["queueviewtype"] = new OptionSetValue(0);//0 - Public
+
+                    queueId = DynamicsInterface.DataverseClient.Create(queue);
+                }
+                else
+                {
+                    queueId = queueCollection.Entities.First().Id;
+                }
+
+                return queueId;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in createQueue(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}queueName: {queueName}"
+                                                );
+                return Guid.Empty;
+            }
+        }
+
+        public static void addCaseToQueue_backup(Guid caseId, string queueName)
+        {
+            try
+            {
+                QueryExpression queryEntity = new QueryExpression("queue");
+                queryEntity.ColumnSet = new ColumnSet(true);
+                queryEntity.Criteria.AddCondition("name", ConditionOperator.Equal, queueName);
+                EntityCollection entityCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryEntity);
+
                 if (entityCollection.Entities.Count == 0)
                     return;
 
@@ -198,15 +289,11 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error adding Case to Queue in addCaseToQueue(...). Exception message: "
-                                                + Environment.NewLine + e.Message
-                                                + Environment.NewLine + "caseId: " + caseId.ToString() + "; queueName: " + queueName
+                DynamicsInterface.writeToLog($"Error in addCaseToQueue(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}caseId: {caseId.ToString()}; queueName: {queueName}"
                                                 );
-
             }
-
         }
-
 
         public static Guid setCaseStatus(int caseTypeCode, int type, int caseStatus
                                            , Guid accountId, Guid qualCodeId, string tsOrderId
@@ -758,8 +845,8 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in getOrgQualStatus(Guid accountId). Exception message: " + Environment.NewLine + e.Message
-                   + Environment.NewLine + "accountId: " + accountId 
+                DynamicsInterface.writeToLog("Error in getOrgQualStatus(Guid accountId). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}accountId: {accountId}"
                    );
             }
 
@@ -836,7 +923,7 @@ namespace DynamicsProcesses
             return caseEntity;
         }
 
-        public static Entity retrieveOrgQualCase(Entity account)
+        public static async Task<Entity> retrieveOrgQualCase(Entity account)
         {            
             try
             {
@@ -847,6 +934,8 @@ namespace DynamicsProcesses
                 if (orgDesigId == Guid.Empty)
                     return null;
 
+                string tsOrgId = account.GetAttributeValue<string>("accountnumber");
+
                 QueryExpression queryQualCase = new QueryExpression("incident");
                 queryQualCase.ColumnSet = new ColumnSet(true);
                 queryQualCase.Criteria.AddCondition("casetypecode", ConditionOperator.Equal, 2);
@@ -854,7 +943,7 @@ namespace DynamicsProcesses
                 queryQualCase.Criteria.AddCondition("customerid", ConditionOperator.Equal, account.Id);
                 queryQualCase.AddOrder("createdon", OrderType.Descending);
                 queryQualCase.TopCount = 1;
-                EntityCollection qualCaseCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryQualCase);
+                EntityCollection qualCaseCollection = await DynamicsInterface.DataverseClient.RetrieveMultipleAsync(queryQualCase);
 
                 if (qualCaseCollection.Entities.Count > 0)
                 {
@@ -869,7 +958,7 @@ namespace DynamicsProcesses
                     queryMapping.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "ts_casestatus");
                     queryMapping.Criteria.AddCondition("ts_parentfieldvalue", ConditionOperator.Equal, "Organization Qualification");
                     queryMapping.Criteria.AddCondition("ts_mappedfieldvalue", ConditionOperator.Equal, qualStatus);
-                    EntityCollection mappingCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryMapping);
+                    EntityCollection mappingCollection = await DynamicsInterface.DataverseClient.RetrieveMultipleAsync(queryMapping);
 
                     if (mappingCollection.Entities.Count == 0)
                     {
@@ -882,22 +971,31 @@ namespace DynamicsProcesses
                     int tsCaseStatusCode = fieldMapping.GetAttributeValue<int>("ts_valuecode");//Case status option value
 
 
-                    Entity qualCodeEntity = DynamicsInterface.DataverseClient.Retrieve("new_qualificationcode", orgDesigId, new ColumnSet(true));
+                    Entity qualCodeEntity = await DynamicsInterface.DataverseClient.RetrieveAsync("new_qualificationcode", orgDesigId, new ColumnSet(true));
                     string qualCode = qualCodeEntity.GetAttributeValue<string>("new_qualcode");
                     string qualTerm = qualCodeEntity.FormattedValues["new_qualterm"];
                     string qualCategory = qualCodeEntity.GetAttributeValue<string>("new_qualcategory");
                     string qualName = qualCodeEntity.GetAttributeValue<string>("new_qualname");
 
-                    Guid caseId = ValidationServicesHelper.createCase(title: qualCode + " - " + qualName
+                    //Guid caseId = ValidationServicesHelper.createCase(title: qualCode + " - " + qualName
+                    //                                                        , caseTypeCode: 2
+                    //                                                        , type: 101996
+                    //                                                        , customerRef: new EntityReference(account.LogicalName, account.Id)
+                    //                                                        , caseStatus: tsCaseStatusCode
+                    //                                                        , qualCodeId: orgDesigId
+                    //                                                        , extraCaseFields: null
+                    //                                                        );
+
+                    Guid caseId = await ValidationServicesHelper.createCaseGeneric(title: $"{qualCode} - {qualName} - TSOrgId: {tsOrgId}"
                                                                             , caseTypeCode: 2
                                                                             , type: 101996
-                                                                            , customerRef: new EntityReference(account.LogicalName, account.Id)
+                                                                            , customerRef: account.ToEntityReference()
                                                                             , caseStatus: tsCaseStatusCode
-                                                                            , qualCodeId: orgDesigId
+                                                                            , qualCodeId: qualCodeEntity.Id
                                                                             , extraCaseFields: null
                                                                             );
 
-                    caseEntity = DynamicsInterface.DataverseClient.Retrieve("incident", caseId, new ColumnSet(true));
+                    caseEntity = await DynamicsInterface.DataverseClient.RetrieveAsync("incident", caseId, new ColumnSet(true));
                 }
 
                 return caseEntity;
@@ -1103,9 +1201,10 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in removeCaseFromQueue(...). Exception message: " + Environment.NewLine + e.Message
-                                                + Environment.NewLine + "caseId: " + caseId.ToString()
+                DynamicsInterface.writeToLog($"Error in removeCaseFromQueue(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}caseId: {caseId.ToString()}"
                                                 );
+                
             }
 
         }
@@ -1132,7 +1231,7 @@ namespace DynamicsProcesses
                 {
                     annotation = new Entity("annotation");
                     annotation["subject"] = noteTitle;
-                    annotation["objectid"] = new EntityReference("incident", annotationParentRef.Id);
+                    annotation["objectid"] = annotationParentRef;
                 }
 
                 var noteDirectives = new System.Dynamic.ExpandoObject() as IDictionary<string, Object>;
@@ -1156,7 +1255,10 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in processSystemNote(). Exception message: " + Environment.NewLine + e.Message);
+                DynamicsInterface.writeToLog($"Error in processSystemNote(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}noteDesc length: {noteDesc.Length}; noteTitle: {noteTitle}; noteDesc: {noteDesc}"
+                                                + $"{Environment.NewLine}{annotationParentRef.LogicalName}Id: {annotationParentRef.Id.ToString()}"
+                                                );
             }
         }
 
@@ -1181,6 +1283,30 @@ namespace DynamicsProcesses
             return existsNote;
         }
 
+        public static async Task<bool> existsSystemNoteAsync(string noteTitle, EntityReference annotationParentRef)
+        {
+            bool existsNote = false;
+            try
+            {
+                QueryExpression queryAnnotation = new QueryExpression("annotation");
+                queryAnnotation.ColumnSet = new ColumnSet(true);
+                queryAnnotation.Criteria.AddCondition("subject", ConditionOperator.Equal, noteTitle);
+                queryAnnotation.Criteria.AddCondition("objectid", ConditionOperator.Equal, annotationParentRef.Id);
+                EntityCollection annotationCollection = await DynamicsInterface.DataverseClient.RetrieveMultipleAsync(queryAnnotation);
+
+                if (annotationCollection.Entities.Count() > 0)
+                    existsNote = true;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog($"Error in existsSystemNote(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}noteTitle: {noteTitle}"
+                                                + $"{Environment.NewLine}{annotationParentRef.LogicalName}Id: {annotationParentRef.Id.ToString()}"
+                                                );
+            }
+            return existsNote;
+        }
+
         public static bool removeSystemNote(string noteTitle, EntityReference annotationParentRef)
         {
             bool success = false;
@@ -1199,53 +1325,44 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in removeSystemNote(). Exception message: " + Environment.NewLine + e.Message
-                    + Environment.NewLine + "noteTitle: " + noteTitle
-                    + Environment.NewLine + "noteParentEntity: " + annotationParentRef.LogicalName + "; noteParentEntityId: " + annotationParentRef.Id
-                    );
+                DynamicsInterface.writeToLog($"Error in removeSystemNote(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}noteTitle: {noteTitle}"
+                                                + $"{Environment.NewLine}{annotationParentRef.LogicalName}Id: {annotationParentRef.Id.ToString()}"
+                                                );
+
+
+                
             }
             return success;
         }
 
 
-        public static Entity findMatchAccount(string name, string legalIdentifier, string addressLine1, string addressPostalCode, string addressCountryCode, Guid? accountId)
+        public static Entity getSystemNote(string noteTitle, EntityReference annotationParentRef)
         {
-            Entity firstMatchAccount = null;
+            Entity annotation = null;
             try
             {
-                QueryExpression queryAccount = new QueryExpression("account");
-                queryAccount.ColumnSet = new ColumnSet(true);
-                queryAccount.Criteria.AddCondition("name", ConditionOperator.BeginsWith, name);
-                if (legalIdentifier == null)
-                {
-                    queryAccount.Criteria.AddCondition("new_legalidentifier", ConditionOperator.Null);
-                }
-                else
-                {
-                    queryAccount.Criteria.AddCondition("new_legalidentifier", ConditionOperator.Equal, legalIdentifier);
-                }
-                queryAccount.Criteria.AddCondition("address1_line1", ConditionOperator.BeginsWith, addressLine1);
-                queryAccount.Criteria.AddCondition("address1_postalcode", ConditionOperator.BeginsWith, addressPostalCode);
-                queryAccount.Criteria.AddCondition("address1_country", ConditionOperator.Equal, addressCountryCode);
+                QueryExpression queryAnnotation = new QueryExpression("annotation");
+                queryAnnotation.ColumnSet = new ColumnSet(true);
+                queryAnnotation.Criteria.AddCondition("subject", ConditionOperator.Equal, noteTitle);
+                queryAnnotation.Criteria.AddCondition("objectid", ConditionOperator.Equal, annotationParentRef.Id);
+                EntityCollection annotationCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryAnnotation);
 
-
-                if (accountId != null)
-                    queryAccount.Criteria.AddCondition("accountid", ConditionOperator.NotEqual, accountId);
-
-                EntityCollection accountCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryAccount);
-
-                if (accountCollection.Entities.Count > 0)
-                    firstMatchAccount = accountCollection.Entities.First();
+                if (annotationCollection.Entities.Count() > 0)
+                    annotation = annotationCollection.Entities.First();
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in findMatchAccount(...).Exception message: "
-                                                                                    + Environment.NewLine + e.Message
-                                                                                    );
+                DynamicsInterface.writeToLog($"Error in getSystemNote(). Exception message:{Environment.NewLine}{e.Message}"
+                                                + $"{Environment.NewLine}noteTitle: {noteTitle}"
+                                                + $"{Environment.NewLine}{annotationParentRef.LogicalName}Id: {annotationParentRef.Id.ToString()}"
+                                                );
             }
-
-            return firstMatchAccount;
+            return annotation;
         }
+
+        
+
         public static string getUserRegistrationIpAddress(string email)
         {
             string userIpAddress = null;
@@ -1288,7 +1405,7 @@ namespace DynamicsProcesses
                 objRequest.SPName = "usp_getNextOnyxId";
                 ExecuteStoredProcResponseType response = client.ExecuteStoredProc(objRequest);
 
-                rowType[] returnXml = response.ReturnXml;               
+                rowType[] returnXml = response.ReturnXml;
                 if (returnXml.Length > 0)
                     newTSOrgContactId = returnXml.First().Any[0].InnerText;
 
@@ -1298,7 +1415,33 @@ namespace DynamicsProcesses
             }
             catch (Exception e)
             {
-                DynamicsInterface.writeToLog("Error in getNewTSOrgContactId(...). Exception message: "+ Environment.NewLine + e.Message);
+                DynamicsInterface.writeToLog("Error in getNewTSOrgContactId(...). Exception message: " + Environment.NewLine + e.Message);
+                return null;
+            }
+        }
+        public static string getNextTsCustomerId()
+        {
+            string tsCustomerId = null;
+            try
+            {
+                DataAccessServiceClient client = new DataAccessServiceClient();
+                ExecuteStoredProcRequestType objRequest = new ExecuteStoredProcRequestType();
+                objRequest.ServerName = DynamicsInterface.Sql2kServer;
+                objRequest.DBName = "ServiceAdmin";
+                objRequest.SPName = "usp_getNextOnyxId";
+                ExecuteStoredProcResponseType response = client.ExecuteStoredProc(objRequest);
+
+                rowType[] returnXml = response.ReturnXml;               
+                if (returnXml.Length > 0)
+                    tsCustomerId = returnXml.First().Any[0].InnerText;
+
+                client.Close();
+
+                return tsCustomerId;
+            }
+            catch (Exception e)
+            {
+                DynamicsInterface.writeToLog("Error in getNextTsCustomerId(...). Exception message: " + Environment.NewLine + e.Message);
                 return null;
             }            
         }

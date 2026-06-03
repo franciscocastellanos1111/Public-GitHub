@@ -493,7 +493,7 @@ namespace DynamicsProcesses
                 string postAutoValidationQueueHighPriority = AutomatedValDefinition.config.postAutoValidationQueueHighPriority;
 
             
-                DateTime referenceDate = DateTime.UtcNow.AddDays(-90);
+                DateTime referenceDate = DateTime.UtcNow.AddDays(-45);
                 string referenceDateText = referenceDate.ToString("yyyy-MM-ddTHH:mm:ssZ");
 
                 string fetchExpressionQuery = @"
@@ -1735,7 +1735,7 @@ namespace DynamicsProcesses
                 {
                     annotation = new Entity("annotation");
                     annotation["subject"] = noteTitle;
-                    annotation["objectid"] = new EntityReference("incident", annotationParentRef.Id);
+                    annotation["objectid"] = annotationParentRef;
                 }                
 
                 var noteDirectives = new System.Dynamic.ExpandoObject() as IDictionary<string, Object>;
@@ -2898,20 +2898,20 @@ namespace DynamicsProcesses
 
                 caseEntity["ts_validationdispositionorgwebsite"] = orgWebsite;
 
-                string agentEmail = caseEntity.GetAttributeValue<string>("ts_validationagentemail");
+                string agentEmail = caseEntity.GetAttributeValue<string>("ts_validationagentemail") ?? "";
 
                 string domain = DynamicsProcessesHelper.regexMatchValue("(?<=@)(.+)", agentEmail, 0);
 
-                bool agentOrgCommonDomain = DynamicsProcessesHelper.regexMatch(domain, orgWebsite);
+                bool agentOrgCommonDomain = !string.IsNullOrEmpty(domain) && DynamicsProcessesHelper.regexMatch(domain, orgWebsite);
 
 
                 #region Agent Rules
-                caseEntity["ts_validationdispositionrulesagentvalid"] = agentDisposition.ToLower() == "is" ? true : false;
+                caseEntity["ts_validationdispositionrulesagentvalid"] = agentDisposition?.ToLower() == "is" ? true : false;
                 if (isAgentNameValid && agentOrgCommonDomain)
                     caseEntity["ts_validationdispositionrulesagentvalid"] = true;
 
 
-                caseEntity["ts_validationagentdisposition"] = agentDisposition.ToLower() == "is" ? true : false;
+                caseEntity["ts_validationagentdisposition"] = agentDisposition?.ToLower() == "is" ? true : false;
                 caseEntity["ts_agentvalidationdispositionscore"] = agentDispScore.ToString();
                 #endregion
                 #endregion
@@ -3145,363 +3145,7 @@ namespace DynamicsProcesses
             #endregion
         }
 
-        public static void getValidationScoreMatrix_backup2(Entity caseEntity, Entity account, string validationReqTransactionId)
-        {
-            try
-            {
-                HttpClient client = new HttpClient();
-                HttpRequestHeaders headers = client.DefaultRequestHeaders;
-                headers.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue("application/json"));
-
-
-
-                string requestUrl = CTPUrl + "services/vsscorematrix/v_001/" + CTPSessionKey + "?transaction_id=" + validationReqTransactionId;
-
-                DynamicsInterface.writeToLog("getValidationScoreMatrix requestUrl: " + requestUrl);
-
-                HttpResponseMessage response = client.GetAsync(requestUrl).Result;
-
-
-                string responseTxt = response.Content.ReadAsStringAsync().Result;
-
-                //DynamicsInterface.writeToLog("getValidationScoreMatrix responseTxt: " + responseTxt);
-
-                dynamic validationResponse = JsonConvert.DeserializeObject(responseTxt);
-
-                dynamic dispositionData = validationResponse.returnStatus.data;
-
-                string orgDisposition = DynamicsProcessesHelper.regexMatchValue("\\w+(\\s\\w+)*", (string)dispositionData.org_disposition, 0);
-                float orgDispScore = dispositionData.org_disposition_confidence;
-
-                string agentDisposition = DynamicsProcessesHelper.regexMatchValue("\\w+(\\s\\w+)*", (string)dispositionData.agent_disposition, 0);
-                float agentDispScore = dispositionData.agent_disposition_confidence;
-
-                string dispositionReference = dispositionData.reference_id;
-
-                string dispositionUrl = DynamicsProcessesHelper.regexMatchValue("https:.+?html", dispositionReference, 0);
-
-                string activityCodeFinal = dispositionData.act_code_final;
-
-                string rulesEvaluatedAction = dispositionData.rules_evaluated_action;
-
-
-                var scoreMatrixObj = JsonConvert.DeserializeObject<System.Dynamic.ExpandoObject>(responseTxt) as IDictionary<string, Object>;
-
-                var dispositionScores = (IDictionary<string, Object>)((IDictionary<string, Object>)scoreMatrixObj["returnStatus"])["data"];
-
-                string dispositionTransactionId = (string)dispositionScores["transaction_id"];
-
-
-                if (validationReqTransactionId != dispositionTransactionId)
-                    return;
-
-                string trustworthyDisposition = DynamicsProcessesHelper.regexMatchValue("\\w+(\\s\\w+)*", (string)dispositionData.risk_disposition, 0);
-                float trustworthyConfidence = dispositionData.risk_disposition_confidence;
-
-
-
-
-                string scoreItems = "";
-                foreach (var dispositionScore in dispositionScores)
-                {
-                    string elementType = dispositionScore.Value.GetType().Name;
-
-                    string value = dispositionScore.Value.ToString();
-                    if (elementType.StartsWith("List") || elementType.ToLower().Contains("object"))
-                        value = JsonConvert.SerializeObject(dispositionScore.Value);
-
-                    scoreItems += dispositionScore.Key + " : " + value;
-
-                    scoreItems += Environment.NewLine + string.Concat(Enumerable.Repeat("-", 30).ToArray()) + Environment.NewLine;
-                }
-
-                string noteTitle = " --- Disposition Details --- ";
-                string noteDesc = "Full Disposition:" + Environment.NewLine + Environment.NewLine;
-                noteDesc += dispositionUrl;
-                noteDesc += Environment.NewLine + Environment.NewLine + "Score Matrix: ";
-                noteDesc += Environment.NewLine + Environment.NewLine + scoreItems;
-
-                processSystemNote(noteTitle, noteDesc, new EntityReference(caseEntity.LogicalName, caseEntity.Id));
-
-
-
-
-
-                caseEntity["ts_validationorgdisposition"] = orgDisposition.ToLower() == "is" ? true : false;
-                caseEntity["ts_orgvalidationdispositionscore"] = orgDispScore.ToString();
-
-                caseEntity["ts_validationagentdisposition"] = agentDisposition.ToLower() == "is" ? true : false;
-                caseEntity["ts_agentvalidationdispositionscore"] = agentDispScore.ToString();
-
-                caseEntity["ts_validationdispositiontrustworthy"] = trustworthyDisposition.ToLower() == "is" ? true : false;
-                caseEntity["ts_validationdispositiontrustworthyconfidence"] = trustworthyConfidence.ToString();
-
-                caseEntity["ts_validationdispositionactivitycodematch"] = activityCodeFinal;
-
-                QueryExpression queryEntity = new QueryExpression("new_activitycodes");
-                queryEntity.Criteria.AddCondition("new_activitycode", ConditionOperator.Equal, activityCodeFinal);
-                EntityCollection entityCollection = DynamicsInterface.DataverseClient.RetrieveMultiple(queryEntity);
-
-                if (entityCollection.Entities.Count > 0)
-                    caseEntity["ts_validationdispositionactivitycode"] = new EntityReference("new_activitycodes", entityCollection.Entities.First().Id);
-
-
-
-
-                rulesEvaluatedAction = rulesEvaluatedAction.ToLower();
-                switch (rulesEvaluatedAction)
-                {
-                    case "manual":
-                        rulesEvaluatedAction = "Manual";
-                        break;
-
-                    case "autoclose":
-                        rulesEvaluatedAction = "AutoClose";
-                        break;
-
-                    default:
-                        rulesEvaluatedAction = string.IsNullOrEmpty(rulesEvaluatedAction) ? "" : Char.ToUpper(rulesEvaluatedAction[0]) + rulesEvaluatedAction.Substring(1);
-                        break;
-                }
-
-
-
-                int tsCaseStatusValue = caseEntity.GetAttributeValue<OptionSetValue>("ts_casestatus").Value;
-
-                if (tsCaseStatusValue == 102056)//102056 - 'OQ - Qualified'
-                {
-                    caseEntity["ts_validationdispositionaction"] = rulesEvaluatedAction;
-                    DynamicsInterface.DataverseClient.Update(caseEntity);
-                    return;
-                }
-
-
-
-
-                string autoValInconclusiveQueue = AutomatedValDefinition.config.autoValInconclusiveQueue == null ? "AutoValidation Inconclusive" : AutomatedValDefinition.config.autoValInconclusiveQueue;
-
-                bool closeOnAutoCloseDisp = AutomatedValDefinition.config.closeOnAutoCloseDisposition;
-
-                if (rulesEvaluatedAction == "AutoClose")
-                {
-                    if (orgDisposition.ToLower() == "is")
-                    {
-                        caseEntity["ts_validationdispositionaction"] = "AutoClose - Qualify";
-                        if (closeOnAutoCloseDisp)
-                        {
-                            caseEntity["ts_casestatus"] = new OptionSetValue(102056); //102056 - 'OQ - Qualified'
-                        }
-                        else
-                        {
-                            caseEntity["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
-                            DynamicsProcessesHelper.addCaseToQueue(caseEntity.Id, autoValInconclusiveQueue);
-                        }
-                    }
-                    else
-                    {
-                        caseEntity["ts_validationdispositionaction"] = "AutoClose - Disqualify";
-                        if (closeOnAutoCloseDisp)
-                        {
-                            caseEntity["ts_casestatus"] = new OptionSetValue(102057); //102056 - 'OQ - Disqualified'
-                        }
-                        else
-                        {
-                            caseEntity["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
-                            DynamicsProcessesHelper.addCaseToQueue(caseEntity.Id, autoValInconclusiveQueue);
-                        }
-                    }
-                }
-                else
-                {
-                    caseEntity["ts_validationdispositionaction"] = "Manual - Further evaluation needed";
-                    caseEntity["ts_casestatus"] = new OptionSetValue(104697);//OQ - AutoValidation - Requires Further Evaluation
-
-                    //string mainFindings = "A conclusive determination could not be made for this organization";
-                    //mainFindings += Environment.NewLine + Environment.NewLine + "The org has been moved to the corresponding queue for further evaluation";
-                    //processSystemNote("Validation Inconclusive", mainFindings, new EntityReference(caseEntity.LogicalName, caseEntity.Id));
-
-                    DynamicsProcessesHelper.addCaseToQueue(caseEntity.Id, autoValInconclusiveQueue);
-                }
-
-
-
-                DynamicsInterface.DataverseClient.Update(caseEntity);
-
-            }
-            catch (Exception e)
-            {
-                DynamicsInterface.writeToLog("Error in getValidationScoreMatrix(). Exception message: " + Environment.NewLine + e.Message
-                     + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
-                    );
-            }
-
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        public static void getValidationScoreMatrix_backup(Entity caseEntity, Entity account, string validationReqTransactionId)
-        {
-            try
-            {
-                HttpClient client = new HttpClient();
-                HttpRequestHeaders headers = client.DefaultRequestHeaders;
-                headers.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue("application/json"));
-
-                //"https://dev.tsgctp.org:45056/services/validation/v_001/454c41a8-ad87-46df-a319-fef72560f75f/"
-
-
-                HttpResponseMessage response = client.GetAsync("https://dev.tsgctp.org:45056/services/vsscorematrix/v_001/61695af7-1652-4b08-b786-192de1884f61?transaction_id=" + validationReqTransactionId).Result;
-
-
-                string responseTxt = response.Content.ReadAsStringAsync().Result;
-
-                dynamic validationResponse = JsonConvert.DeserializeObject(responseTxt);
-
-                dynamic dispositionData = validationResponse.returnStatus.data;
-
-                string orgDisposition = DynamicsProcessesHelper.regexMatchValue("\\w+(\\s\\w+)*", (string)dispositionData.org_disposition, 0);
-                float orgDispScore = dispositionData.org_disposition_score;
-
-                string agentDisposition = DynamicsProcessesHelper.regexMatchValue("\\w+(\\s\\w+)*", (string)dispositionData.org_agent_disposition, 0);
-                float agentDispScore = dispositionData.org_agent_disposition_score;
-
-                string dispositionReference = dispositionData.reference_id;
-
-                string dispositionUrl = DynamicsProcessesHelper.regexMatchValue("https:.+?html", dispositionReference, 0);
-
-
-                var scoreMatrixObj = JsonConvert.DeserializeObject<System.Dynamic.ExpandoObject>(responseTxt) as IDictionary<string, Object>;
-
-                var dispositionScores = (IDictionary<string, Object>)((IDictionary<string, Object>)scoreMatrixObj["returnStatus"])["data"];
-
-                string dispositionTransactionId = (string)dispositionScores["transaction_id"];
-
-
-                if (validationReqTransactionId != dispositionTransactionId)
-                    return;
-
-                string scoreItems = "";
-                foreach (var dispositionScore in dispositionScores)
-                {
-                    scoreItems += dispositionScore.Key + " : " + dispositionScore.Value;
-                    scoreItems += Environment.NewLine + string.Concat(Enumerable.Repeat("-", 30).ToArray()) + Environment.NewLine;
-                }
-
-
-                string recommendedActivityCodes = getValidationDispositionArticles(validationReqTransactionId);
-
-                string noteTitle = " --- Disposition Details --- ";
-
-                string noteDesc = "Full Disposition:" + Environment.NewLine + Environment.NewLine;
-
-                noteDesc += dispositionUrl;
-
-                noteDesc += Environment.NewLine + Environment.NewLine + "Score Matrix: ";
-
-                noteDesc += Environment.NewLine + Environment.NewLine + scoreItems;
-
-
-                processSystemNote(noteTitle, noteDesc, new EntityReference(caseEntity.LogicalName, caseEntity.Id));
-
-
-                float scoreReqOrg = AutomatedValDefinition.config.scoreRequiredOrgAutoVal;
-                float scoreReqAgent = AutomatedValDefinition.config.scoreRequiredAgentAutoVal;
-
-
-
-                caseEntity["ts_orgvalidationdispositionscore"] = orgDispScore.ToString();
-
-                caseEntity["ts_agentvalidationdispositionscore"] = agentDispScore.ToString();
-
-                string notetitleKeyNotes = "Disposition - Key Notes";
-                string mainFindings = "";
-
-                mainFindings = "At the time of this validation process, the Disposition score requirements to opt for automated validation were:";
-
-                mainFindings += Environment.NewLine + Environment.NewLine + "Organization: " + scoreReqOrg.ToString();
-                mainFindings += Environment.NewLine + Environment.NewLine + "Agent: " + scoreReqAgent.ToString();
-
-                bool orgGotDisp = orgDispScore >= scoreReqOrg ? true : false;
-                bool agentGotDisp = agentDispScore >= scoreReqAgent ? true : false;
-
-                if (orgGotDisp && agentGotDisp)
-                {
-                    mainFindings += Environment.NewLine + Environment.NewLine + "Both the org and agent met the requirement";
-                    mainFindings += Environment.NewLine + Environment.NewLine + "The organization has been qualified";
-
-                    caseEntity["ts_validationdisposition"] = "Validated";
-                    caseEntity["ts_casestatus"] = new OptionSetValue(102056); //102056 - 'OQ - Qualified'
-
-
-                }
-
-                else
-                {
-                    if (!orgGotDisp && !agentGotDisp)
-                    {
-                        mainFindings += Environment.NewLine + Environment.NewLine + "Neither the org (with a " + orgDispScore.ToString() + " score), nor the agent (with a " + agentDispScore.ToString() + " score) met the requirement";
-                    }
-                    else
-                    {
-                        string orgFailedMsg = !orgGotDisp ? "The org (with a " + orgDispScore.ToString() + " score) did not meet the requirement" : "";
-
-                        string agentFailedMsg = !agentGotDisp ? "The agent (with a " + agentDispScore.ToString() + " score) did not meet the requirement" : "";
-
-                        mainFindings += Environment.NewLine + Environment.NewLine + orgFailedMsg + agentFailedMsg;
-
-                    }
-
-                    mainFindings += Environment.NewLine + Environment.NewLine + "The organization was not qualified, and has been moved to the corresponding queue for further evaluation";
-                    caseEntity["ts_validationdisposition"] = "Not Validated";
-                    caseEntity["ts_casestatus"] = new OptionSetValue(102050);
-
-                    DynamicsProcessesHelper.addCaseToQueue(caseEntity.Id, "Failed AutoVal");
-                }
-
-                DynamicsInterface.DataverseClient.Update(caseEntity);
-
-                mainFindings += Environment.NewLine + Environment.NewLine + string.Concat(Enumerable.Repeat("-", 100).ToArray());
-
-                mainFindings += Environment.NewLine + Environment.NewLine + "Recommended Activity Codes:";
-                mainFindings += Environment.NewLine + Environment.NewLine + recommendedActivityCodes;
-                
-                processSystemNote(notetitleKeyNotes, mainFindings, new EntityReference(caseEntity.LogicalName, caseEntity.Id));
-
-
-
-            }
-            catch (Exception e)
-            {
-                DynamicsInterface.writeToLog("Error in getValidationScoreMatrix(). Exception message: " + Environment.NewLine + e.Message
-                     + Environment.NewLine + "validationReqTransactionId: " + validationReqTransactionId
-                    );
-            }
-
-        }
-
+       
 
         public static string getValidationRequest_b(Entity account)
         {
@@ -4441,7 +4085,7 @@ namespace DynamicsProcesses
         {
             var fraudFlags = new List<string>();
             bool isFraudulent = false;
-            const string WHOISJSON_API_KEY = "76855763a3f8806f755e33aa9ff00450edf5e2e75db2319506797de7bb0d94a4";
+            string WHOISJSON_API_KEY = System.Configuration.ConfigurationManager.AppSettings["WhoisJsonApiKey"];
 
             try
             {
