@@ -106,6 +106,55 @@ class RepresentativeAuthority(BaseModel):
     is_authorized: Optional[bool] = None
 
 
+class MemoryProposal(BaseModel):
+    action: str = Field(
+        description=(
+            "Either 'record' (create/update a memory entry) or 'feedback' "
+            "(report success/failure for an entry returned by memory_lookup)."
+        )
+    )
+    category: Optional[str] = Field(
+        default=None,
+        description=(
+            "For action='record'. One of: Registry, RegistryUrlTemplate, BlockedSource, "
+            "DocPattern, IssuingAuthority, QueryPattern, OrgIdentity, Heuristic, KnownScam."
+        ),
+    )
+    scope_key: Optional[str] = Field(
+        default=None,
+        description=(
+            "For action='record'. ISO country code (e.g., 'BR', 'US') or 'global'. "
+            "Must match [A-Za-z0-9_-]{1,32}."
+        ),
+    )
+    subject_key: Optional[str] = Field(
+        default=None,
+        description=(
+            "For action='record'. Short stable identifier (lower_snake), e.g. "
+            "'cnpj_receitaws_v1'. Same subject_key in same (category, scope) = update."
+        ),
+    )
+    subject: Optional[str] = Field(default=None, description="Human-readable label (<=512 chars).")
+    content: Optional[dict] = Field(
+        default=None,
+        description=(
+            "Category-specific JSON. For Registry/RegistryUrlTemplate include "
+            "'url_template' (with {placeholders}); for BlockedSource include 'host' "
+            "and 'reason'; for DocPattern include 'pattern' and 'meaning'."
+        ),
+    )
+    tags: Optional[str] = None
+    ref: Optional[str] = Field(
+        default=None,
+        description="For action='feedback'. PartitionKey/RowKey of the entry being graded.",
+    )
+    outcome: Optional[str] = Field(
+        default=None,
+        description="For action='feedback'. Either 'success' or 'failure'.",
+    )
+    notes: Optional[str] = None
+
+
 class TokenUsage(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
@@ -150,6 +199,7 @@ class VerificationResult(BaseModel):
     analyzed_at: datetime = Field(default_factory=datetime.utcnow)
     analyzed_documents: List[str] = Field(default_factory=list)
     token_usage: Optional[TokenUsage] = None
+    memory_proposals: List[MemoryProposal] = Field(default_factory=list)
 
     def to_case_note(self) -> str:
         try:

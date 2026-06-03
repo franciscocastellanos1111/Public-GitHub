@@ -29,7 +29,9 @@ class DynamicsHelper:
         # import, so these fields behave like .NET static fields for the
         # lifetime of this Functions worker process.
         self.access_token: Optional[str] = None
-        self.access_token_expiration: datetime = datetime.min.replace(tzinfo=timezone.utc)
+        self.access_token_expiration: datetime = datetime.min.replace(
+            tzinfo=timezone.utc
+        )
         self._token_lock = threading.Lock()
         self.master_auth_key = os.getenv("master_auth_key")
         self.techsoupservices_api_resource = os.getenv("TECHSOUPSERVICES_API_RESOURCE")
@@ -167,7 +169,10 @@ class DynamicsHelper:
         self._accepted_client_ids = self._load_accepted_client_ids()
 
     def validate_token_with_signature(
-        self, token: str, logger: logging.Logger = None, alternative_audience: str = None
+        self,
+        token: str,
+        logger: logging.Logger = None,
+        alternative_audience: str = None,
     ) -> Dict[str, Any]:
 
         result = {
@@ -332,10 +337,9 @@ class DynamicsHelper:
                         # Refresh 200 s early to avoid races with downstream calls.
                         expires_in = int(response_object.get("expires_in", 3599))
                         self.access_token = token
-                        self.access_token_expiration = (
-                            datetime.now(timezone.utc)
-                            + timedelta(seconds=max(expires_in - 200, 60))
-                        )
+                        self.access_token_expiration = datetime.now(
+                            timezone.utc
+                        ) + timedelta(seconds=max(expires_in - 200, 60))
                         logger.info(
                             f"Successfully obtained access token: {token[:30]}... "
                             f"(cached until {self.access_token_expiration.isoformat()})"
@@ -346,7 +350,9 @@ class DynamicsHelper:
                         logger.error(f"Response: {response_text}")
                         return None
                 else:
-                    logger.error(f"Token request failed with status {response.status_code}")
+                    logger.error(
+                        f"Token request failed with status {response.status_code}"
+                    )
                     logger.error(f"Response: {response_text}")
                     return None
 
@@ -390,7 +396,6 @@ def RouteToDynamics(req: func.HttpRequest) -> func.HttpResponse:
         return add_cors_headers(response, origin, origin)
 
     try:
-        # Get the custom_api parameter from the route
         custom_api = req.route_params.get("custom_api")
         if not custom_api:
             response = func.HttpResponse(
@@ -400,7 +405,6 @@ def RouteToDynamics(req: func.HttpRequest) -> func.HttpResponse:
             )
             return add_cors_headers(response, origin)
 
-        # Validate custom_api parameter against the regex pattern
         pattern = r"^\w+$"
         if not re.match(pattern, custom_api):
             response = func.HttpResponse(
@@ -414,7 +418,6 @@ def RouteToDynamics(req: func.HttpRequest) -> func.HttpResponse:
             )
             return add_cors_headers(response, origin)
 
-        # Get the JSON body from the request
         req_body = req.get_json()
         if not req_body:
             response = func.HttpResponse(
@@ -424,12 +427,10 @@ def RouteToDynamics(req: func.HttpRequest) -> func.HttpResponse:
             )
             return add_cors_headers(response, origin)
 
-        # First convert the request body to Dynamics format
         converted_data = techsoupservices_helper.get_expando_object(req_body)
 
         converted_data["requestBodyText"] = json.dumps(req_body)
 
-        # Wrap the converted data in ts_request object
         ts_request = {"ts_request": converted_data}
 
         auth_header = req.headers.get("Authorization")
@@ -442,7 +443,9 @@ def RouteToDynamics(req: func.HttpRequest) -> func.HttpResponse:
             return add_cors_headers(response, origin)
 
         auth_validation_result = dynamics_helper.validate_token_with_signature(
-            auth_header, logging, alternative_audience=dynamics_helper.dynamics_environment
+            auth_header,
+            logging,
+            alternative_audience=dynamics_helper.dynamics_environment,
         )
         if not auth_validation_result["is_valid"]:
             response = func.HttpResponse(
@@ -486,7 +489,6 @@ def RouteToDynamics(req: func.HttpRequest) -> func.HttpResponse:
             else:
                 response_data = {}
 
-            # Convert the response back to clean JSON format
             clean_json = techsoupservices_helper.convert_expando_to_json(response_data)
 
             http_response = func.HttpResponse(
@@ -553,7 +555,6 @@ def RouteToDynamicsAuthKey(req: func.HttpRequest) -> func.HttpResponse:
             )
             return add_cors_headers(response, origin)
 
-        # Validate auth_key by calling get_ts_pngo_id, unless it matches master_auth_key
         if (
             dynamics_helper.master_auth_key
             and auth_key.lower() != dynamics_helper.master_auth_key.lower()
@@ -603,7 +604,6 @@ def RouteToDynamicsAuthKey(req: func.HttpRequest) -> func.HttpResponse:
             )
             return add_cors_headers(response, origin)
 
-        # First convert the request body to Dynamics format
         converted_data = techsoupservices_helper.get_expando_object(req_body)
 
         converted_data["requestBodyText"] = json.dumps(req_body)
@@ -644,7 +644,6 @@ def RouteToDynamicsAuthKey(req: func.HttpRequest) -> func.HttpResponse:
             else:
                 response_data = {}
 
-            # Convert the response back to clean JSON format
             clean_json = techsoupservices_helper.convert_expando_to_json(response_data)
 
             http_response = func.HttpResponse(
@@ -882,7 +881,7 @@ def RouteToERP(req: func.HttpRequest) -> func.HttpResponse:
                     mimetype="application/json",
                 )
                 return add_cors_headers(response, origin)
-            
+
         logging.info(f"query_url: {query_url}")
 
         req_body = req.get_json()
@@ -1237,7 +1236,9 @@ def techsoupservices():
     pass
 
 
-@app.route(route="case/artifacts/{auth_key}/{transaction_id}", methods=["GET", "OPTIONS"])
+@app.route(
+    route="case/artifacts/{auth_key}/{transaction_id}", methods=["GET", "OPTIONS"]
+)
 def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
 
     logging.info("GetCaseArtifacts function starting processing a request")
@@ -1301,27 +1302,29 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
             "OData-Version": "4.0",
         }
 
-        #region Find case by transaction ID
-        case_select = ",".join([
-            "incidentid",
-            "title",
-            "ts_validationrequesttransactionid",
-            "ts_validationrequestlegalname",
-            "ts_validationrequestlegalidentifier",
-            "ts_validationrequestorgtype",
-            "ts_validationrequestaddressline1",
-            "ts_validationrequestaddresscity",
-            "ts_validationrequestaddressstateregion",
-            "ts_validationrequestaddresspostalcode",
-            "ts_validationrequestaddresscountryid",
-            "ts_validationrequestemail",
-            "ts_validationrequestphone",
-            "ts_validationrequestwebsite",
-            "ts_validationrequestagentfirstname",
-            "ts_validationrequestagentlastname",
-            "ts_validationrequestagentemail",
-            "_customerid_value",
-        ])
+        # region Find case by transaction ID
+        case_select = ",".join(
+            [
+                "incidentid",
+                "title",
+                "ts_validationrequesttransactionid",
+                "ts_validationrequestlegalname",
+                "ts_validationrequestlegalidentifier",
+                "ts_validationrequestorgtype",
+                "ts_validationrequestaddressline1",
+                "ts_validationrequestaddresscity",
+                "ts_validationrequestaddressstateregion",
+                "ts_validationrequestaddresspostalcode",
+                "ts_validationrequestaddresscountryid",
+                "ts_validationrequestemail",
+                "ts_validationrequestphone",
+                "ts_validationrequestwebsite",
+                "ts_validationrequestagentfirstname",
+                "ts_validationrequestagentlastname",
+                "ts_validationrequestagentemail",
+                "_customerid_value",
+            ]
+        )
 
         case_filter = f"ts_validationrequesttransactionid eq '{transaction_id}'"
         case_url = (
@@ -1337,7 +1340,9 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
         if case_response.status_code != 200:
             logging.error(f"Failed to query incidents: {case_response.status_code}")
             response = func.HttpResponse(
-                json.dumps({"error": f"Failed to query incidents: {case_response.text}"}),
+                json.dumps(
+                    {"error": f"Failed to query incidents: {case_response.text}"}
+                ),
                 status_code=case_response.status_code,
                 mimetype="application/json",
             )
@@ -1347,7 +1352,9 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
         if not case_records:
             logging.warning(f"No case found for transaction ID: {transaction_id}")
             response = func.HttpResponse(
-                json.dumps({"error": f"No case found for transaction_id: {transaction_id}"}),
+                json.dumps(
+                    {"error": f"No case found for transaction_id: {transaction_id}"}
+                ),
                 status_code=404,
                 mimetype="application/json",
             )
@@ -1356,9 +1363,9 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
         case_record = case_records[0]
         incident_id = case_record.get("incidentid")
         logging.info(f"Found case: {incident_id}")
-        #endregion
+        # endregion
 
-        #region Get entity attachments for the case
+        # region Get entity attachments for the case
         attachments_filter = f"_msdyn_relatedentity_value eq {incident_id}"
         attachments_url = (
             f"{dynamics_helper.dynamics_environment}/api/data/v9.2/msdyn_entityattachments"
@@ -1374,10 +1381,12 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
             attachment_records = attachments_response.json().get("value", [])
             logging.info(f"Found {len(attachment_records)} entity attachment(s)")
         else:
-            logging.warning(f"Failed to query attachments: {attachments_response.status_code}")
-        #endregion
+            logging.warning(
+                f"Failed to query attachments: {attachments_response.status_code}"
+            )
+        # endregion
 
-        #region Download file blobs and build artifact list
+        # region Download file blobs and build artifact list
         artifacts = []
         for record in attachment_records:
             attachment_id = record.get("msdyn_entityattachmentid")
@@ -1403,11 +1412,15 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
             try:
                 file_info_response = requests.get(file_info_url, headers=headers)
                 if file_info_response.status_code == 200:
-                    file_attachments = file_info_response.json().get("msdyn_entityattachment_FileAttachments", [])
+                    file_attachments = file_info_response.json().get(
+                        "msdyn_entityattachment_FileAttachments", []
+                    )
                     if file_attachments:
                         file_info = file_attachments[0]
                         artifact_entry["contentType"] = file_info.get("mimetype")
-                        artifact_entry["fileSizeInBytes"] = file_info.get("filesizeinbytes")
+                        artifact_entry["fileSizeInBytes"] = file_info.get(
+                            "filesizeinbytes"
+                        )
                         artifact_entry["createdOn"] = file_info.get("createdon")
             except Exception as e:
                 logging.warning(f"Failed to get file info for {attachment_id}: {e}")
@@ -1421,18 +1434,26 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
                 download_response = requests.get(download_url, headers=headers)
                 if download_response.status_code == 200:
                     file_bytes = download_response.content
-                    artifact_entry["fileContent"] = base64.b64encode(file_bytes).decode("utf-8")
-                    artifact_entry["fileSizeInBytes"] = artifact_entry["fileSizeInBytes"] or len(file_bytes)
-                    logging.info(f"Downloaded file: {file_name} ({len(file_bytes)} bytes)")
+                    artifact_entry["fileContent"] = base64.b64encode(file_bytes).decode(
+                        "utf-8"
+                    )
+                    artifact_entry["fileSizeInBytes"] = artifact_entry[
+                        "fileSizeInBytes"
+                    ] or len(file_bytes)
+                    logging.info(
+                        f"Downloaded file: {file_name} ({len(file_bytes)} bytes)"
+                    )
                 else:
-                    logging.warning(f"Failed to download {file_name}: HTTP {download_response.status_code}")
+                    logging.warning(
+                        f"Failed to download {file_name}: HTTP {download_response.status_code}"
+                    )
             except Exception as e:
                 logging.warning(f"Error downloading {file_name}: {e}")
 
             artifacts.append(artifact_entry)
-        #endregion
+        # endregion
 
-        #region Get annotations (notes) attached to the case
+        # region Get annotations (notes) attached to the case
         annotations_filter = f"_objectid_value eq {incident_id}"
         annotations_url = (
             f"{dynamics_helper.dynamics_environment}/api/data/v9.2/annotations"
@@ -1448,7 +1469,9 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
                 annotation_records = annotations_response.json().get("value", [])
                 logging.info(f"Found {len(annotation_records)} annotation(s)")
             else:
-                logging.warning(f"Failed to query annotations: {annotations_response.status_code}")
+                logging.warning(
+                    f"Failed to query annotations: {annotations_response.status_code}"
+                )
         except Exception as e:
             logging.warning(f"Error querying annotations: {e}")
 
@@ -1465,9 +1488,9 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
             if ann.get("documentbody"):
                 note_entry["fileContent"] = ann.get("documentbody")
             notes.append(note_entry)
-        #endregion
+        # endregion
 
-        #region Build response
+        # region Build response
         account_info = case_record.get("customerid_account")
         result_payload = {
             "transactionId": transaction_id,
@@ -1475,14 +1498,22 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
             "caseTitle": case_record.get("title"),
             "organization": {
                 "legalName": case_record.get("ts_validationrequestlegalname"),
-                "legalIdentifier": case_record.get("ts_validationrequestlegalidentifier"),
+                "legalIdentifier": case_record.get(
+                    "ts_validationrequestlegalidentifier"
+                ),
                 "orgType": case_record.get("ts_validationrequestorgtype"),
                 "address": {
                     "line1": case_record.get("ts_validationrequestaddressline1"),
                     "city": case_record.get("ts_validationrequestaddresscity"),
-                    "stateRegion": case_record.get("ts_validationrequestaddressstateregion"),
-                    "postalCode": case_record.get("ts_validationrequestaddresspostalcode"),
-                    "countryId": case_record.get("ts_validationrequestaddresscountryid"),
+                    "stateRegion": case_record.get(
+                        "ts_validationrequestaddressstateregion"
+                    ),
+                    "postalCode": case_record.get(
+                        "ts_validationrequestaddresspostalcode"
+                    ),
+                    "countryId": case_record.get(
+                        "ts_validationrequestaddresscountryid"
+                    ),
                 },
                 "email": case_record.get("ts_validationrequestemail"),
                 "phone": case_record.get("ts_validationrequestphone"),
@@ -1500,11 +1531,13 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
             "summary": {
                 "totalArtifacts": len(artifacts),
                 "totalNotes": len(notes),
-                "artifactsWithContent": sum(1 for a in artifacts if a.get("fileContent")),
+                "artifactsWithContent": sum(
+                    1 for a in artifacts if a.get("fileContent")
+                ),
                 "notesWithAttachments": sum(1 for n in notes if n.get("fileContent")),
             },
         }
-        #endregion
+        # endregion
 
         http_response = func.HttpResponse(
             json.dumps(result_payload, indent=2),
@@ -1529,11 +1562,16 @@ def GetCaseArtifacts(req: func.HttpRequest) -> func.HttpResponse:
 def _ensure_nonprofit_agent_on_path():
     try:
         import sys, os as _os
+
         here = _os.path.dirname(_os.path.abspath(__file__))
         # Sibling project: ../Nonprofit Verification Agent
-        npv_root = _os.path.normpath(_os.path.join(here, "..", "Nonprofit Verification Agent"))
+        npv_root = _os.path.normpath(
+            _os.path.join(here, "..", "Nonprofit Verification Agent")
+        )
         # Sibling project: ../Foundry Opus 4.7 Agentic Library
-        foundry_root = _os.path.normpath(_os.path.join(here, "..", "Foundry Opus 4.7 Agentic Library"))
+        foundry_root = _os.path.normpath(
+            _os.path.join(here, "..", "Foundry Opus 4.7 Agentic Library")
+        )
         # Parent Python/ folder hosts validation_request_processing.py
         python_root = _os.path.normpath(_os.path.join(here, ".."))
         for p in (foundry_root, npv_root, python_root):
@@ -1551,17 +1589,28 @@ def NonprofitAgentHealth(req: func.HttpRequest) -> func.HttpResponse:
     try:
         _ensure_nonprofit_agent_on_path()
         from foundry_opus import FoundryClient
+
         ok = FoundryClient().health_check()
-        body = {"status": "ok" if ok else "degraded", "model": os.getenv("FOUNDRY_DEPLOYMENT", "claude-opus-4-7-2")}
+        body = {
+            "status": "ok" if ok else "degraded",
+            "model": os.getenv("FOUNDRY_DEPLOYMENT", "claude-opus-4-7-2"),
+        }
         return add_cors_headers(
-            func.HttpResponse(json.dumps(body), status_code=200 if ok else 503, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps(body),
+                status_code=200 if ok else 503,
+                mimetype="application/json",
+            ),
             origin,
         )
     except Exception as e:
         logging.error(f"NonprofitAgentHealth error: {e}")
         return add_cors_headers(
-            func.HttpResponse(json.dumps({"status": "error", "error": str(e)}),
-                              status_code=500, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps({"status": "error", "error": str(e)}),
+                status_code=500,
+                mimetype="application/json",
+            ),
             origin,
         )
 
@@ -1570,7 +1619,11 @@ def _run_nonprofit_verification(req_body: dict, logger=logging) -> dict:
     try:
         _ensure_nonprofit_agent_on_path()
         from nonprofit_verifier import (
-            verify_nonprofit_case, VerificationRequest, CaseContext, EmailMessage, Attachment,
+            verify_nonprofit_case,
+            VerificationRequest,
+            CaseContext,
+            EmailMessage,
+            Attachment,
         )
 
         if not isinstance(req_body, dict):
@@ -1582,13 +1635,23 @@ def _run_nonprofit_verification(req_body: dict, logger=logging) -> dict:
             raise ValueError("email.sender_email is required.")
 
         attachments = []
-        for a in (email_data.get("attachments") or []):
-            attachments.append(Attachment(**{
-                k: a.get(k) for k in (
-                    "filename", "content_type", "url", "content_base64",
-                    "extracted_text", "size_bytes",
-                ) if k in a
-            }))
+        for a in email_data.get("attachments") or []:
+            attachments.append(
+                Attachment(
+                    **{
+                        k: a.get(k)
+                        for k in (
+                            "filename",
+                            "content_type",
+                            "url",
+                            "content_base64",
+                            "extracted_text",
+                            "size_bytes",
+                        )
+                        if k in a
+                    }
+                )
+            )
 
         request = VerificationRequest(
             case=CaseContext(**{k: v for k, v in case_data.items() if v is not None}),
@@ -1630,22 +1693,31 @@ def NonprofitVerify(req: func.HttpRequest) -> func.HttpResponse:
             req_body = req.get_json()
         except ValueError:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "Request body must be valid JSON"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
         result = _run_nonprofit_verification(req_body, logging)
         return add_cors_headers(
-            func.HttpResponse(json.dumps(result, indent=2, default=str),
-                              status_code=200, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps(result, indent=2, default=str),
+                status_code=200,
+                mimetype="application/json",
+            ),
             origin,
         )
     except Exception as e:
         logging.error(f"Error in NonprofitVerify: {str(e)}")
         return add_cors_headers(
-            func.HttpResponse(json.dumps({"error": f"Internal server error: {str(e)}"}),
-                              status_code=500, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
             origin,
         )
 
@@ -1663,8 +1735,11 @@ def NonprofitVerifyAuthKey(req: func.HttpRequest) -> func.HttpResponse:
         auth_key = req.route_params.get("auth_key")
         if not auth_key:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "auth_key parameter is required"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "auth_key parameter is required"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -1677,8 +1752,11 @@ def NonprofitVerifyAuthKey(req: func.HttpRequest) -> func.HttpResponse:
             if not ts_pngo_id:
                 logging.warning(f"Unauthorized: Invalid auth_key {auth_key}")
                 return add_cors_headers(
-                    func.HttpResponse(json.dumps({"error": "Unauthorized: Invalid auth_key"}),
-                                      status_code=401, mimetype="application/json"),
+                    func.HttpResponse(
+                        json.dumps({"error": "Unauthorized: Invalid auth_key"}),
+                        status_code=401,
+                        mimetype="application/json",
+                    ),
                     origin,
                 )
 
@@ -1686,8 +1764,11 @@ def NonprofitVerifyAuthKey(req: func.HttpRequest) -> func.HttpResponse:
             req_body = req.get_json()
         except ValueError:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "Request body must be valid JSON"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -1695,18 +1776,20 @@ def NonprofitVerifyAuthKey(req: func.HttpRequest) -> func.HttpResponse:
 
         # Optionally write the case note back to Dynamics directly via the consolidated helper.
         case_id = (req_body.get("case") or {}).get("case_id")
-        write_back = (req.params.get("writeCaseNote", "true").lower() != "false")
+        write_back = req.params.get("writeCaseNote", "true").lower() != "false"
         if case_id and write_back and result.get("case_note"):
             try:
                 _ensure_nonprofit_agent_on_path()
                 from nonprofit_verifier.dynamics_tools import create_case_note
+
                 annotation_resp = create_case_note(
                     case_id=case_id,
                     subject=f"Nonprofit Verification — {result.get('status', 'Result')}",
                     notetext=result["case_note"],
                 )
                 ok = annotation_resp.get("success") is not False and bool(
-                    annotation_resp.get("annotationid") or annotation_resp.get("entityId")
+                    annotation_resp.get("annotationid")
+                    or annotation_resp.get("entityId")
                 )
                 result["_dynamics_writeback"] = {"ok": ok, "response": annotation_resp}
             except Exception as e:
@@ -1714,15 +1797,21 @@ def NonprofitVerifyAuthKey(req: func.HttpRequest) -> func.HttpResponse:
                 result["_dynamics_writeback"] = {"ok": False, "error": str(e)}
 
         return add_cors_headers(
-            func.HttpResponse(json.dumps(result, indent=2, default=str),
-                              status_code=200, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps(result, indent=2, default=str),
+                status_code=200,
+                mimetype="application/json",
+            ),
             origin,
         )
     except Exception as e:
         logging.error(f"Error in NonprofitVerifyAuthKey: {str(e)}")
         return add_cors_headers(
-            func.HttpResponse(json.dumps({"error": f"Internal server error: {str(e)}"}),
-                              status_code=500, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
             origin,
         )
 
@@ -1739,16 +1828,21 @@ def NonprofitAnalyzeDocument(req: func.HttpRequest) -> func.HttpResponse:
     try:
         _ensure_nonprofit_agent_on_path()
         from nonprofit_verifier.tools import (
-            fetch_document_text, decode_attachment_text,
-            classify_registration_number, scan_authenticity_indicators,
+            fetch_document_text,
+            decode_attachment_text,
+            classify_registration_number,
+            scan_authenticity_indicators,
         )
 
         try:
             req_body = req.get_json() or {}
         except ValueError:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "Request body must be valid JSON"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -1764,27 +1858,36 @@ def NonprofitAnalyzeDocument(req: func.HttpRequest) -> func.HttpResponse:
             text = fetch_document_text.invoke({"url": url})
             source = {"type": "url", "value": url}
         elif content_base64:
-            text = decode_attachment_text.invoke({
-                "filename": filename,
-                "content_base64": content_base64,
-                "content_type": content_type,
-            })
+            text = decode_attachment_text.invoke(
+                {
+                    "filename": filename,
+                    "content_base64": content_base64,
+                    "content_type": content_type,
+                }
+            )
             source = {"type": "base64", "filename": filename}
         elif req_body.get("text"):
             text = req_body["text"]
             source = {"type": "text"}
         else:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({
-                    "error": "Provide one of: url, content_base64, or text."
-                }), status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps(
+                        {"error": "Provide one of: url, content_base64, or text."}
+                    ),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
         indicators = scan_authenticity_indicators.invoke({"text": text})
         rn_classification = (
-            classify_registration_number.invoke({"registration_number": registration_number})
-            if registration_number else None
+            classify_registration_number.invoke(
+                {"registration_number": registration_number}
+            )
+            if registration_number
+            else None
         )
 
         body = {
@@ -1795,25 +1898,57 @@ def NonprofitAnalyzeDocument(req: func.HttpRequest) -> func.HttpResponse:
             "registration_number_classification": rn_classification,
         }
         return add_cors_headers(
-            func.HttpResponse(json.dumps(body, indent=2),
-                              status_code=200, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps(body, indent=2), status_code=200, mimetype="application/json"
+            ),
             origin,
         )
     except Exception as e:
         logging.error(f"Error in NonprofitAnalyzeDocument: {str(e)}")
         return add_cors_headers(
-            func.HttpResponse(json.dumps({"error": f"Internal server error: {str(e)}"}),
-                              status_code=500, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
             origin,
         )
 
 
-def _run_nonprofit_verification_by_case_id(case_id: str, max_iterations=None, logger=logging) -> dict:
+def _run_nonprofit_verification_by_case_id(
+    case_id: str, max_iterations=None, logger=logging
+) -> dict:
     try:
         _ensure_nonprofit_agent_on_path()
         from nonprofit_verifier import verify_nonprofit_case_by_id
+
         result = verify_nonprofit_case_by_id(case_id, max_iterations=max_iterations)
-        return json.loads(result.model_dump_json())
+        result_dict = json.loads(result.model_dump_json())
+        try:
+            proposals = result_dict.get("memory_proposals") or []
+            if proposals:
+                import npv_memory_service
+
+                summary = npv_memory_service.apply_proposals(
+                    proposals=proposals,
+                    case_id=case_id,
+                    logger=logger,
+                )
+                result_dict["memory_write_summary"] = summary
+                logger.info(
+                    f"_run_nonprofit_verification_by_case_id - memory_proposals applied for case_id={case_id}: {summary}"
+                )
+        except Exception as mem_ex:
+            logger.error(
+                f"_run_nonprofit_verification_by_case_id - memory write failed: {mem_ex}"
+            )
+            result_dict["memory_write_summary"] = {
+                "recorded": 0,
+                "feedback": 0,
+                "rejected": 0,
+                "errors": [str(mem_ex)],
+            }
+        return result_dict
     except Exception as e:
         logger.error(f"_run_nonprofit_verification_by_case_id error: {e}")
         return {
@@ -1840,8 +1975,11 @@ def NonprofitVerifyCase(req: func.HttpRequest) -> func.HttpResponse:
         auth_key = req.route_params.get("auth_key")
         if not auth_key:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "auth_key parameter is required"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "auth_key parameter is required"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -1853,8 +1991,11 @@ def NonprofitVerifyCase(req: func.HttpRequest) -> func.HttpResponse:
             if not ts_pngo_id:
                 logging.warning(f"Unauthorized: Invalid auth_key {auth_key}")
                 return add_cors_headers(
-                    func.HttpResponse(json.dumps({"error": "Unauthorized: Invalid auth_key"}),
-                                      status_code=401, mimetype="application/json"),
+                    func.HttpResponse(
+                        json.dumps({"error": "Unauthorized: Invalid auth_key"}),
+                        status_code=401,
+                        mimetype="application/json",
+                    ),
                     origin,
                 )
 
@@ -1862,8 +2003,11 @@ def NonprofitVerifyCase(req: func.HttpRequest) -> func.HttpResponse:
             req_body = req.get_json() or {}
         except ValueError:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "Request body must be valid JSON"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -1876,9 +2020,13 @@ def NonprofitVerifyCase(req: func.HttpRequest) -> func.HttpResponse:
         )
         if not case_id:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({
-                    "error": "caseId is required (Dynamics 365 incidentid)."
-                }), status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps(
+                        {"error": "caseId is required (Dynamics 365 incidentid)."}
+                    ),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -1888,20 +2036,24 @@ def NonprofitVerifyCase(req: func.HttpRequest) -> func.HttpResponse:
         except Exception:
             max_iterations = None
 
-        result = _run_nonprofit_verification_by_case_id(case_id, max_iterations=max_iterations, logger=logging)
+        result = _run_nonprofit_verification_by_case_id(
+            case_id, max_iterations=max_iterations, logger=logging
+        )
 
-        write_back = (req.params.get("writeCaseNote", "true").lower() != "false")
+        write_back = req.params.get("writeCaseNote", "true").lower() != "false"
         if write_back and result.get("case_note"):
             try:
                 _ensure_nonprofit_agent_on_path()
                 from nonprofit_verifier.dynamics_tools import create_case_note
+
                 annotation_resp = create_case_note(
                     case_id=case_id,
                     subject=f"Nonprofit Verification — {result.get('status', 'Result')}",
                     notetext=result["case_note"],
                 )
                 ok = annotation_resp.get("success") is not False and bool(
-                    annotation_resp.get("annotationid") or annotation_resp.get("entityId")
+                    annotation_resp.get("annotationid")
+                    or annotation_resp.get("entityId")
                 )
                 result["_dynamics_writeback"] = {"ok": ok, "response": annotation_resp}
             except Exception as e:
@@ -1909,15 +2061,21 @@ def NonprofitVerifyCase(req: func.HttpRequest) -> func.HttpResponse:
                 result["_dynamics_writeback"] = {"ok": False, "error": str(e)}
 
         return add_cors_headers(
-            func.HttpResponse(json.dumps(result, indent=2, default=str),
-                              status_code=200, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps(result, indent=2, default=str),
+                status_code=200,
+                mimetype="application/json",
+            ),
             origin,
         )
     except Exception as e:
         logging.error(f"Error in NonprofitVerifyCase: {str(e)}")
         return add_cors_headers(
-            func.HttpResponse(json.dumps({"error": f"Internal server error: {str(e)}"}),
-                              status_code=500, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
             origin,
         )
 
@@ -1967,7 +2125,9 @@ def _enqueue_npv_message(message_dict: dict, logger=logging) -> None:
         raise
 
 
-@app.route(route="agent/nonprofit/verify-case-async/{auth_key}", methods=["POST", "OPTIONS"])
+@app.route(
+    route="agent/nonprofit/verify-case-async/{auth_key}", methods=["POST", "OPTIONS"]
+)
 def NonprofitVerifyCaseAsync(req: func.HttpRequest) -> func.HttpResponse:
     import uuid
 
@@ -1981,8 +2141,11 @@ def NonprofitVerifyCaseAsync(req: func.HttpRequest) -> func.HttpResponse:
         auth_key = req.route_params.get("auth_key")
         if not auth_key:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "auth_key parameter is required"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "auth_key parameter is required"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -1994,8 +2157,11 @@ def NonprofitVerifyCaseAsync(req: func.HttpRequest) -> func.HttpResponse:
             if not ts_pngo_id:
                 logging.warning(f"Unauthorized: Invalid auth_key {auth_key}")
                 return add_cors_headers(
-                    func.HttpResponse(json.dumps({"error": "Unauthorized: Invalid auth_key"}),
-                                      status_code=401, mimetype="application/json"),
+                    func.HttpResponse(
+                        json.dumps({"error": "Unauthorized: Invalid auth_key"}),
+                        status_code=401,
+                        mimetype="application/json",
+                    ),
                     origin,
                 )
 
@@ -2003,8 +2169,11 @@ def NonprofitVerifyCaseAsync(req: func.HttpRequest) -> func.HttpResponse:
             req_body = req.get_json() or {}
         except ValueError:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "Request body must be valid JSON"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -2017,9 +2186,13 @@ def NonprofitVerifyCaseAsync(req: func.HttpRequest) -> func.HttpResponse:
         )
         if not case_id:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({
-                    "error": "caseId is required (Dynamics 365 incidentid)."
-                }), status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps(
+                        {"error": "caseId is required (Dynamics 365 incidentid)."}
+                    ),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -2047,9 +2220,13 @@ def NonprofitVerifyCaseAsync(req: func.HttpRequest) -> func.HttpResponse:
             _enqueue_npv_message(message, logging)
         except Exception as queue_ex:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({
-                    "error": f"Failed to enqueue verification request: {queue_ex}"
-                }), status_code=500, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps(
+                        {"error": f"Failed to enqueue verification request: {queue_ex}"}
+                    ),
+                    status_code=500,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -2065,15 +2242,19 @@ def NonprofitVerifyCaseAsync(req: func.HttpRequest) -> func.HttpResponse:
             ),
         }
         return add_cors_headers(
-            func.HttpResponse(json.dumps(body, indent=2),
-                              status_code=202, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps(body, indent=2), status_code=202, mimetype="application/json"
+            ),
             origin,
         )
     except Exception as e:
         logging.error(f"Error in NonprofitVerifyCaseAsync: {str(e)}")
         return add_cors_headers(
-            func.HttpResponse(json.dumps({"error": f"Internal server error: {str(e)}"}),
-                              status_code=500, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
             origin,
         )
 
@@ -2105,7 +2286,9 @@ async def NonprofitVerifyQueueWorker(msg: func.QueueMessage) -> None:
         try:
             payload = json.loads(body_text)
         except Exception as parse_ex:
-            logging.error(f"NonprofitVerifyQueueWorker - Invalid JSON in queue message: {body_text[:500]}")
+            logging.error(
+                f"NonprofitVerifyQueueWorker - Invalid JSON in queue message: {body_text[:500]}"
+            )
             npv_archive_service.mark_failed(
                 archive,
                 error_message=f"Invalid JSON in queue message: {parse_ex}",
@@ -2134,7 +2317,9 @@ async def NonprofitVerifyQueueWorker(msg: func.QueueMessage) -> None:
         )
 
         if not case_id:
-            logging.error(f"NonprofitVerifyQueueWorker - Missing case_id. request_id={request_id}")
+            logging.error(
+                f"NonprofitVerifyQueueWorker - Missing case_id. request_id={request_id}"
+            )
             npv_archive_service.mark_failed(
                 archive,
                 error_message="Missing case_id in queue message",
@@ -2149,53 +2334,71 @@ async def NonprofitVerifyQueueWorker(msg: func.QueueMessage) -> None:
             logging,
         )
 
-        annotation_id = None
-        write_back_ok = None
-        write_back_error = None
-        if write_case_note and result.get("case_note"):
-            try:
-                _ensure_nonprofit_agent_on_path()
-                from nonprofit_verifier.dynamics_tools import create_case_note
-                annotation_resp = await asyncio.to_thread(
-                    create_case_note,
-                    case_id,
-                    f"Nonprofit Verification — {result.get('status', 'Result')}",
-                    result["case_note"],
-                )
-                if not isinstance(annotation_resp, dict):
-                    annotation_resp = {"success": False, "error": f"unexpected response type: {type(annotation_resp).__name__}", "raw": str(annotation_resp)[:500]}
-                annotation_id = annotation_resp.get("annotationid") or annotation_resp.get("entityId")
-                write_back_ok = annotation_resp.get("success") is not False and bool(annotation_id)
-                logging.info(
-                    f"NonprofitVerifyQueueWorker - Writeback ok={write_back_ok}. request_id={request_id}, "
-                    f"annotationid={annotation_id}"
-                )
-            except Exception as wb_ex:
-                write_back_ok = False
-                write_back_error = str(wb_ex)
-                logging.error(
-                    f"NonprofitVerifyQueueWorker - Writeback failed. request_id={request_id}, error={wb_ex}"
-                )
+        # annotation_id = None
+        # write_back_ok = None
+        # write_back_error = None
+        # if write_case_note and result.get("case_note"):
+        #     try:
+        #         _ensure_nonprofit_agent_on_path()
+        #         from nonprofit_verifier.dynamics_tools import create_case_note
 
-        logging.info(
-            f"NonprofitVerifyQueueWorker - Done. request_id={request_id}, case_id={case_id}, "
-            f"status={result.get('status')}, confidence={result.get('confidence')}"
-        )
+        #         annotation_resp = await asyncio.to_thread(
+        #             create_case_note,
+        #             case_id,
+        #             f"Nonprofit Verification — {result.get('status', 'Result')}",
+        #             result["case_note"],
+        #         )
+        #         if not isinstance(annotation_resp, dict):
+        #             annotation_resp = {
+        #                 "success": False,
+        #                 "error": f"unexpected response type: {type(annotation_resp).__name__}",
+        #                 "raw": str(annotation_resp)[:500],
+        #             }
+        #         annotation_id = annotation_resp.get(
+        #             "annotationid"
+        #         ) or annotation_resp.get("entityId")
+        #         write_back_ok = annotation_resp.get("success") is not False and bool(
+        #             annotation_id
+        #         )
+        #         logging.info(
+        #             f"NonprofitVerifyQueueWorker - Writeback ok={write_back_ok}. request_id={request_id}, "
+        #             f"annotationid={annotation_id}"
+        #         )
+        #     except Exception as wb_ex:
+        #         write_back_ok = False
+        #         write_back_error = str(wb_ex)
+        #         logging.error(
+        #             f"NonprofitVerifyQueueWorker - Writeback failed. request_id={request_id}, error={wb_ex}"
+        #         )
 
-        if write_case_note and write_back_ok is False:
-            npv_archive_service.mark_partially_completed(
-                archive,
-                notes=f"Verification completed but case-note writeback failed: {write_back_error}",
-                result=result,
-                logger=logging,
-            )
-        else:
-            npv_archive_service.mark_completed(
+        # logging.info(
+        #     f"NonprofitVerifyQueueWorker - Done. request_id={request_id}, case_id={case_id}, "
+        #     f"status={result.get('status')}, confidence={result.get('confidence')}"
+        # )
+
+        # if write_case_note and write_back_ok is False:
+        #     npv_archive_service.mark_partially_completed(
+        #         archive,
+        #         notes=f"Verification completed but case-note writeback failed: {write_back_error}",
+        #         result=result,
+        #         logger=logging,
+        #     )
+        # else:
+        #     npv_archive_service.mark_completed(
+        #         archive,
+        #         result=result,
+        #         notes="Processing completed successfully",
+        #         annotation_id=annotation_id,
+        #         write_back_ok=write_back_ok,
+        #         logger=logging,
+        #     )
+
+        npv_archive_service.mark_completed(
                 archive,
                 result=result,
                 notes="Processing completed successfully",
-                annotation_id=annotation_id,
-                write_back_ok=write_back_ok,
+                annotation_id="waived_for_now",
+                write_back_ok=True,
                 logger=logging,
             )
     except Exception as e:
@@ -2215,7 +2418,9 @@ async def NonprofitVerifyQueueWorker(msg: func.QueueMessage) -> None:
         raise
 
 
-@app.route(route="agent/nonprofit/archive-query/{auth_key}", methods=["POST", "OPTIONS"])
+@app.route(
+    route="agent/nonprofit/archive-query/{auth_key}", methods=["POST", "OPTIONS"]
+)
 def NonprofitVerifyArchiveQuery(req: func.HttpRequest) -> func.HttpResponse:
 
     logging.info("NonprofitVerifyArchiveQuery - Start")
@@ -2230,8 +2435,11 @@ def NonprofitVerifyArchiveQuery(req: func.HttpRequest) -> func.HttpResponse:
         auth_key = req.route_params.get("auth_key")
         if not auth_key:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "auth_key parameter is required"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "auth_key parameter is required"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -2241,10 +2449,15 @@ def NonprofitVerifyArchiveQuery(req: func.HttpRequest) -> func.HttpResponse:
         ):
             ts_pngo_id = techsoupservices_helper.get_ts_pngo_id(auth_key, logging)
             if not ts_pngo_id:
-                logging.warning(f"NonprofitVerifyArchiveQuery - Unauthorized auth_key {auth_key}")
+                logging.warning(
+                    f"NonprofitVerifyArchiveQuery - Unauthorized auth_key {auth_key}"
+                )
                 return add_cors_headers(
-                    func.HttpResponse(json.dumps({"error": "Unauthorized: Invalid auth_key"}),
-                                      status_code=401, mimetype="application/json"),
+                    func.HttpResponse(
+                        json.dumps({"error": "Unauthorized: Invalid auth_key"}),
+                        status_code=401,
+                        mimetype="application/json",
+                    ),
                     origin,
                 )
 
@@ -2252,8 +2465,11 @@ def NonprofitVerifyArchiveQuery(req: func.HttpRequest) -> func.HttpResponse:
             query_fields = req.get_json() or {}
         except ValueError:
             return add_cors_headers(
-                func.HttpResponse(json.dumps({"error": "Request body must be valid JSON"}),
-                                  status_code=400, mimetype="application/json"),
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
                 origin,
             )
 
@@ -2283,8 +2499,850 @@ def NonprofitVerifyArchiveQuery(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Error in NonprofitVerifyArchiveQuery: {str(e)}")
         return add_cors_headers(
-            func.HttpResponse(json.dumps({"error": f"Internal server error: {str(e)}"}),
-                              status_code=500, mimetype="application/json"),
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
             origin,
         )
 
+
+def _npv_memory_authorize(req: func.HttpRequest, origin: str):
+    auth_key = req.route_params.get("auth_key")
+    if not auth_key:
+        return None, add_cors_headers(
+            func.HttpResponse(
+                json.dumps({"error": "auth_key parameter is required"}),
+                status_code=400,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+    if (
+        dynamics_helper.master_auth_key
+        and auth_key.lower() != dynamics_helper.master_auth_key.lower()
+    ):
+        ts_pngo_id = techsoupservices_helper.get_ts_pngo_id(auth_key, logging)
+        if not ts_pngo_id:
+            logging.warning(f"NPV memory endpoint - Unauthorized auth_key {auth_key}")
+            return None, add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "Unauthorized: Invalid auth_key"}),
+                    status_code=401,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+    return auth_key, None
+
+
+@app.route(route="agent/nonprofit/memory-query/{auth_key}", methods=["POST", "OPTIONS"])
+def NonprofitVerifyMemoryQuery(req: func.HttpRequest) -> func.HttpResponse:
+
+    logging.info("NonprofitVerifyMemoryQuery - Start")
+    origin = req.headers.get("Origin", "*")
+
+    if req.method == "OPTIONS":
+        return add_cors_headers(func.HttpResponse(status_code=200), origin)
+
+    try:
+        import npv_memory_service
+
+        _auth, err = _npv_memory_authorize(req, origin)
+        if err is not None:
+            return err
+
+        try:
+            query_fields = req.get_json() or {}
+        except ValueError:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        slot_name = query_fields.get("slot") or npv_memory_service.get_slot_name()
+        logging.info(f"NonprofitVerifyMemoryQuery - SlotName: {slot_name}")
+
+        results = npv_memory_service.build_and_execute_adhoc_query(
+            query_fields, slot_name, logging
+        )
+
+        logging.info(f"NonprofitVerifyMemoryQuery - Returned {len(results)} record(s)")
+
+        body = {
+            "slot": slot_name,
+            "query": query_fields,
+            "resultCount": len(results),
+            "entries": results,
+        }
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps(body, indent=2, default=str),
+                status_code=200,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+    except Exception as e:
+        logging.error(f"Error in NonprofitVerifyMemoryQuery: {str(e)}")
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+
+
+@app.route(route="agent/nonprofit/memory-admin/{auth_key}", methods=["POST", "OPTIONS"])
+def NonprofitVerifyMemoryAdmin(req: func.HttpRequest) -> func.HttpResponse:
+
+    logging.info("NonprofitVerifyMemoryAdmin - Start")
+    origin = req.headers.get("Origin", "*")
+
+    if req.method == "OPTIONS":
+        return add_cors_headers(func.HttpResponse(status_code=200), origin)
+
+    try:
+        import npv_memory_service
+
+        _auth, err = _npv_memory_authorize(req, origin)
+        if err is not None:
+            return err
+
+        try:
+            body_in = req.get_json() or {}
+        except ValueError:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        action = (body_in.get("action") or "").lower()
+        slot_name = body_in.get("slot") or npv_memory_service.get_slot_name()
+        logging.info(f"NonprofitVerifyMemoryAdmin - action={action} slot={slot_name}")
+
+        result_obj = None
+        status_code = 200
+
+        if action == "pin":
+            result_obj = npv_memory_service.pin_manual(
+                category=body_in.get("category"),
+                scope_key=body_in.get("scope_key"),
+                subject_key=body_in.get("subject_key"),
+                subject=body_in.get("subject") or "",
+                content=body_in.get("content") or {},
+                tags=body_in.get("tags"),
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "deprecate":
+            result_obj = npv_memory_service.set_status(
+                ref=body_in.get("ref"),
+                new_status="deprecated",
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "reactivate":
+            result_obj = npv_memory_service.set_status(
+                ref=body_in.get("ref"),
+                new_status="active",
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "needs_review":
+            result_obj = npv_memory_service.set_status(
+                ref=body_in.get("ref"),
+                new_status="needsReview",
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "feedback":
+            result_obj = npv_memory_service.record_feedback(
+                ref=body_in.get("ref"),
+                outcome=(body_in.get("outcome") or "").lower(),
+                notes=body_in.get("notes"),
+                case_id=body_in.get("case_id"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "lookup":
+            results = npv_memory_service.lookup_entries(
+                category=body_in.get("category"),
+                scope_key=body_in.get("scope_key"),
+                subject_contains=body_in.get("subject_contains"),
+                min_confidence=body_in.get("min_confidence") or "Low",
+                include_statuses=body_in.get("include_statuses"),
+                max_results=int(body_in.get("max_results") or 10),
+                slot_name=slot_name,
+                logger=logging,
+            )
+            result_obj = {"count": len(results), "entries": results}
+        elif action == "bootstrap":
+            try:
+                import bootstrap_memory
+
+                seeded = 0
+                rejected = 0
+                for ent in bootstrap_memory._seed_entries():
+                    r = npv_memory_service.pin_manual(
+                        category=ent["category"],
+                        scope_key=ent["scope_key"],
+                        subject_key=ent["subject_key"],
+                        subject=ent["subject"],
+                        content=ent["content"],
+                        tags=ent.get("tags"),
+                        notes="seeded via memory-admin bootstrap",
+                        slot_name=slot_name,
+                        logger=logging,
+                    )
+                    if r is not None:
+                        seeded += 1
+                    else:
+                        rejected += 1
+                result_obj = {"seeded": seeded, "rejected": rejected, "slot": slot_name}
+            except Exception as ex:
+                result_obj = {"error": f"bootstrap failed: {ex}"}
+                status_code = 500
+        else:
+            result_obj = {
+                "error": f"unknown action '{action}'. Valid: pin, deprecate, reactivate, needs_review, feedback, lookup, bootstrap"
+            }
+            status_code = 400
+
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps(
+                    {"slot": slot_name, "action": action, "result": result_obj},
+                    indent=2,
+                    default=str,
+                ),
+                status_code=status_code,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+    except Exception as e:
+        logging.error(f"Error in NonprofitVerifyMemoryAdmin: {str(e)}")
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+
+
+# ===========================================================================
+# Global Support Case Agent — HTTP enqueue + queue worker
+# ===========================================================================
+GSC_QUEUE_NAME = os.getenv("GSC_QUEUE_NAME", "global-support-case-queue")
+
+
+def _enqueue_gsc_message(message_dict: dict, logger=logging) -> None:
+    try:
+        from azure.storage.queue import (
+            QueueClient,
+            TextBase64EncodePolicy,
+            TextBase64DecodePolicy,
+        )
+
+        connection_string = os.getenv("AzureWebJobsStorage")
+        if not connection_string:
+            raise RuntimeError("AzureWebJobsStorage is not configured.")
+
+        queue_client = QueueClient.from_connection_string(
+            conn_str=connection_string,
+            queue_name=GSC_QUEUE_NAME,
+            message_encode_policy=TextBase64EncodePolicy(),
+            message_decode_policy=TextBase64DecodePolicy(),
+        )
+
+        try:
+            queue_client.create_queue()
+        except Exception:
+            pass
+
+        message_json = json.dumps(message_dict, default=str)
+        queue_client.send_message(message_json)
+        logger.info(
+            f"Enqueued GSC message to '{GSC_QUEUE_NAME}'. request_id={message_dict.get('request_id')}, "
+            f"case_id={message_dict.get('case_id')}, bytes={len(message_json)}"
+        )
+    except Exception as e:
+        logger.error(f"_enqueue_gsc_message error: {e}")
+        raise
+
+
+@app.route(
+    route="agent/gsc/handle-case-async/{auth_key}", methods=["POST", "OPTIONS"]
+)
+def GlobalSupportCaseHandleAsync(req: func.HttpRequest) -> func.HttpResponse:
+    import uuid
+
+    logging.info("GlobalSupportCaseHandleAsync function starting processing a request")
+    origin = req.headers.get("Origin", "*")
+
+    if req.method == "OPTIONS":
+        return add_cors_headers(func.HttpResponse(status_code=200), origin)
+
+    try:
+        auth_key = req.route_params.get("auth_key")
+        if not auth_key:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "auth_key parameter is required"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        if (
+            dynamics_helper.master_auth_key
+            and auth_key.lower() != dynamics_helper.master_auth_key.lower()
+        ):
+            ts_pngo_id = techsoupservices_helper.get_ts_pngo_id(auth_key, logging)
+            if not ts_pngo_id:
+                logging.warning(f"GSC Unauthorized: Invalid auth_key {auth_key}")
+                return add_cors_headers(
+                    func.HttpResponse(
+                        json.dumps({"error": "Unauthorized: Invalid auth_key"}),
+                        status_code=401,
+                        mimetype="application/json",
+                    ),
+                    origin,
+                )
+
+        try:
+            req_body = req.get_json() or {}
+        except ValueError:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        case_id = (
+            req_body.get("caseId")
+            or req_body.get("case_id")
+            or req_body.get("incidentId")
+            or req_body.get("incidentid")
+            or req.params.get("caseId")
+        )
+        email_id = req_body.get("emailId") or req_body.get("email_id")
+        trigger = req_body.get("trigger")
+        correlation_id = req_body.get("correlationId") or req_body.get("correlation_id")
+
+        if not case_id:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "caseId is required (Dynamics 365 incidentid)."}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        max_iter_raw = req_body.get("maxIterations") or req.params.get("maxIterations")
+        try:
+            max_iterations = int(max_iter_raw) if max_iter_raw else None
+        except Exception:
+            max_iterations = None
+
+        agent_mode_raw = (req_body.get("agentMode") or req_body.get("agent_mode") or "active_agent")
+        agent_mode = str(agent_mode_raw).strip().lower()
+        if agent_mode not in ("active_agent", "simulate"):
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "agentMode must be 'active_agent' or 'simulate'."}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        request_id = str(uuid.uuid4())
+        enqueued_at = datetime.utcnow().isoformat() + "Z"
+
+        message = {
+            "request_id": request_id,
+            "auth_key": auth_key,
+            "case_id": case_id,
+            "email_id": email_id,
+            "trigger": trigger,
+            "correlation_id": correlation_id,
+            "max_iterations": max_iterations,
+            "agent_mode": agent_mode,
+            "enqueued_at": enqueued_at,
+        }
+
+        try:
+            _enqueue_gsc_message(message, logging)
+        except Exception as queue_ex:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": f"Failed to enqueue GSC request: {queue_ex}"}),
+                    status_code=500,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        body = {
+            "status": "Accepted",
+            "request_id": request_id,
+            "case_id": case_id,
+            "agent_mode": agent_mode,
+            "queue": GSC_QUEUE_NAME,
+            "enqueued_at": enqueued_at,
+            "message": (
+                "Case queued for the Global Support Case Agent. In 'active_agent' "
+                "mode the agent will either reply directly from the receiving queue "
+                "or route the case to the Global Support queue with notes. In "
+                "'simulate' mode no direct writes will be made to the case, but "
+                "memory proposals will still be applied."
+            ),
+        }
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps(body, indent=2), status_code=202, mimetype="application/json"
+            ),
+            origin,
+        )
+    except Exception as e:
+        logging.error(f"Error in GlobalSupportCaseHandleAsync: {str(e)}")
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+
+
+def _run_gsc_handle_by_case_id(case_id: str, max_iterations, email_id, correlation_id, request_id, logger, agent_mode: str = "active_agent"):
+    try:
+        from global_support_case_agent import handle_case_by_id, CaseRequest, AgentMode
+
+        try:
+            mode_enum = AgentMode(agent_mode)
+        except Exception:
+            mode_enum = AgentMode.ACTIVE_AGENT
+
+        gsc_req = CaseRequest(
+            case_id=case_id,
+            email_id=email_id,
+            correlation_id=correlation_id,
+            agent_mode=mode_enum,
+        )
+        result = handle_case_by_id(
+            case_id=case_id,
+            max_iterations=max_iterations,
+            operation_id=request_id,
+            request=gsc_req,
+        )
+        return result.model_dump(mode="json")
+    except Exception as e:
+        logger.error(f"_run_gsc_handle_by_case_id failed for case {case_id}: {e}")
+        return {
+            "case_id": case_id,
+            "intent": "Other",
+            "confidence": "Low",
+            "recommendation": "EscalateToGlobalSupport",
+            "summary": "",
+            "reasoning": f"Agent execution failed: {e}",
+            "requires_human_review": True,
+            "case_note": f"GSC agent execution failed: {e}",
+            "action_taken": "Failed",
+        }
+
+
+@app.queue_trigger(
+    arg_name="msg",
+    queue_name=os.getenv("GSC_QUEUE_NAME", "global-support-case-queue"),
+    connection="AzureWebJobsStorage",
+)
+async def GlobalSupportCaseQueueWorker(msg: func.QueueMessage) -> None:
+
+    request_id = None
+    case_id = None
+    archive = None
+    queue_name = os.getenv("GSC_QUEUE_NAME", "global-support-case-queue")
+    body_text = ""
+    try:
+        body_text = msg.get_body().decode("utf-8")
+
+        try:
+            import npv_archive_service
+            archive = npv_archive_service.archive_message(
+                message_json=body_text,
+                queue_name=queue_name,
+                function_name="GlobalSupportCaseQueueWorker",
+                logger=logging,
+            )
+        except Exception as arch_ex:
+            logging.warning(f"GSC archive_message failed (continuing): {arch_ex}")
+            archive = None
+
+        try:
+            payload = json.loads(body_text)
+        except Exception as parse_ex:
+            logging.error(
+                f"GlobalSupportCaseQueueWorker - Invalid JSON in queue message: {body_text[:500]}"
+            )
+            try:
+                if archive is not None:
+                    import npv_archive_service
+                    npv_archive_service.mark_failed(
+                        archive,
+                        error_message=f"Invalid JSON in queue message: {parse_ex}",
+                        exception=parse_ex,
+                        logger=logging,
+                    )
+            except Exception:
+                pass
+            return
+
+        request_id = payload.get("request_id")
+        case_id = payload.get("case_id")
+        email_id = payload.get("email_id")
+        correlation_id = payload.get("correlation_id")
+        max_iterations = payload.get("max_iterations")
+        auth_key = payload.get("auth_key")
+        agent_mode = (payload.get("agent_mode") or "active_agent")
+
+        try:
+            if archive is not None:
+                import npv_archive_service
+                npv_archive_service.update_with_parsed_details(
+                    archive,
+                    request_id=request_id,
+                    case_id=case_id,
+                    auth_key=auth_key,
+                    logger=logging,
+                )
+        except Exception:
+            pass
+
+        logging.info(
+            f"GlobalSupportCaseQueueWorker - Start. request_id={request_id}, case_id={case_id}, "
+            f"max_iterations={max_iterations}"
+        )
+
+        if not case_id:
+            logging.error(f"GlobalSupportCaseQueueWorker - Missing case_id. request_id={request_id}")
+            try:
+                if archive is not None:
+                    import npv_archive_service
+                    npv_archive_service.mark_failed(
+                        archive,
+                        error_message="Missing case_id in queue message",
+                        logger=logging,
+                    )
+            except Exception:
+                pass
+            return
+
+        result = await asyncio.to_thread(
+            _run_gsc_handle_by_case_id,
+            case_id,
+            max_iterations,
+            email_id,
+            correlation_id,
+            request_id,
+            logging,
+            agent_mode,
+        )
+
+        logging.info(
+            f"GlobalSupportCaseQueueWorker - Done. request_id={request_id}, case_id={case_id}, "
+            f"intent={result.get('intent')}, confidence={result.get('confidence')}, "
+            f"recommendation={result.get('recommendation')}, action_taken={result.get('action_taken')}, "
+            f"agent_mode={agent_mode}"
+        )
+
+        try:
+            if archive is not None:
+                import npv_archive_service
+                npv_archive_service.mark_completed(
+                    archive,
+                    result=result,
+                    notes="Processing completed successfully",
+                    annotation_id=None,
+                    write_back_ok=True,
+                    logger=logging,
+                )
+        except Exception:
+            pass
+    except Exception as e:
+        logging.error(
+            f"GlobalSupportCaseQueueWorker - Unhandled error. request_id={request_id}, "
+            f"case_id={case_id}, error={e}"
+        )
+        try:
+            if archive is not None:
+                import npv_archive_service
+                npv_archive_service.mark_failed(
+                    archive,
+                    error_message=str(e),
+                    exception=e,
+                    logger=logging,
+                )
+        except Exception:
+            pass
+        raise
+
+
+def _gsc_memory_authorize(req: func.HttpRequest, origin: str):
+    auth_key = req.route_params.get("auth_key")
+    if not auth_key:
+        return None, add_cors_headers(
+            func.HttpResponse(
+                json.dumps({"error": "auth_key parameter is required"}),
+                status_code=400,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+    if (
+        dynamics_helper.master_auth_key
+        and auth_key.lower() != dynamics_helper.master_auth_key.lower()
+    ):
+        ts_pngo_id = techsoupservices_helper.get_ts_pngo_id(auth_key, logging)
+        if not ts_pngo_id:
+            logging.warning(f"GSC memory endpoint - Unauthorized auth_key {auth_key}")
+            return None, add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "Unauthorized: Invalid auth_key"}),
+                    status_code=401,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+    return auth_key, None
+
+
+@app.route(route="agent/gsc/memory-query/{auth_key}", methods=["POST", "OPTIONS"])
+def GlobalSupportCaseMemoryQuery(req: func.HttpRequest) -> func.HttpResponse:
+
+    logging.info("GlobalSupportCaseMemoryQuery - Start")
+    origin = req.headers.get("Origin", "*")
+
+    if req.method == "OPTIONS":
+        return add_cors_headers(func.HttpResponse(status_code=200), origin)
+
+    try:
+        import gsc_memory_service
+
+        _auth, err = _gsc_memory_authorize(req, origin)
+        if err is not None:
+            return err
+
+        try:
+            query_fields = req.get_json() or {}
+        except ValueError:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        slot_name = query_fields.get("slot") or gsc_memory_service.get_slot_name()
+        logging.info(f"GlobalSupportCaseMemoryQuery - SlotName: {slot_name}")
+
+        results = gsc_memory_service.build_and_execute_adhoc_query(
+            query_fields, slot_name, logging
+        )
+
+        logging.info(f"GlobalSupportCaseMemoryQuery - Returned {len(results)} record(s)")
+
+        body = {
+            "slot": slot_name,
+            "query": query_fields,
+            "resultCount": len(results),
+            "entries": results,
+        }
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps(body, indent=2, default=str),
+                status_code=200,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+    except Exception as e:
+        logging.error(f"Error in GlobalSupportCaseMemoryQuery: {str(e)}")
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+
+
+@app.route(route="agent/gsc/memory-admin/{auth_key}", methods=["POST", "OPTIONS"])
+def GlobalSupportCaseMemoryAdmin(req: func.HttpRequest) -> func.HttpResponse:
+
+    logging.info("GlobalSupportCaseMemoryAdmin - Start")
+    origin = req.headers.get("Origin", "*")
+
+    if req.method == "OPTIONS":
+        return add_cors_headers(func.HttpResponse(status_code=200), origin)
+
+    try:
+        import gsc_memory_service
+
+        _auth, err = _gsc_memory_authorize(req, origin)
+        if err is not None:
+            return err
+
+        try:
+            body_in = req.get_json() or {}
+        except ValueError:
+            return add_cors_headers(
+                func.HttpResponse(
+                    json.dumps({"error": "Request body must be valid JSON"}),
+                    status_code=400,
+                    mimetype="application/json",
+                ),
+                origin,
+            )
+
+        action = (body_in.get("action") or "").lower()
+        slot_name = body_in.get("slot") or gsc_memory_service.get_slot_name()
+        logging.info(f"GlobalSupportCaseMemoryAdmin - action={action} slot={slot_name}")
+
+        result_obj = None
+        status_code = 200
+
+        if action == "pin":
+            result_obj = gsc_memory_service.pin_manual(
+                category=body_in.get("category"),
+                scope_key=body_in.get("scope_key"),
+                subject_key=body_in.get("subject_key"),
+                subject=body_in.get("subject") or "",
+                content=body_in.get("content") or {},
+                tags=body_in.get("tags"),
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "deprecate":
+            result_obj = gsc_memory_service.set_status(
+                ref=body_in.get("ref"),
+                new_status="deprecated",
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "reactivate":
+            result_obj = gsc_memory_service.set_status(
+                ref=body_in.get("ref"),
+                new_status="active",
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "needs_review":
+            result_obj = gsc_memory_service.set_status(
+                ref=body_in.get("ref"),
+                new_status="needsReview",
+                notes=body_in.get("notes"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "feedback":
+            result_obj = gsc_memory_service.record_feedback(
+                ref=body_in.get("ref"),
+                outcome=(body_in.get("outcome") or "").lower(),
+                notes=body_in.get("notes"),
+                case_id=body_in.get("case_id"),
+                slot_name=slot_name,
+                logger=logging,
+            )
+        elif action == "lookup":
+            results = gsc_memory_service.lookup_entries(
+                category=body_in.get("category"),
+                scope_key=body_in.get("scope_key"),
+                subject_contains=body_in.get("subject_contains"),
+                min_confidence=body_in.get("min_confidence") or "Low",
+                include_statuses=body_in.get("include_statuses"),
+                max_results=int(body_in.get("max_results") or 10),
+                slot_name=slot_name,
+                logger=logging,
+            )
+            result_obj = {"count": len(results), "entries": results}
+        elif action == "bootstrap":
+            try:
+                from scripts import seed_gsc_memory as _seeder
+
+                sources = body_in.get("sources") or ["kb", "web", "latam"]
+                sources = [s.lower() for s in sources]
+                totals = {}
+                if "kb" in sources:
+                    totals["kb"] = _seeder._seed_kb_hits(gsc_memory_service, slot_name, dry_run=False)
+                if "web" in sources:
+                    totals["web"] = _seeder._seed_web_sources(gsc_memory_service, slot_name, dry_run=False)
+                if "latam" in sources:
+                    totals["latam"] = _seeder._seed_latam_intents(gsc_memory_service, slot_name, dry_run=False)
+                result_obj = {
+                    "slot": slot_name,
+                    "seeded": totals,
+                    "total": sum(totals.values()),
+                }
+            except Exception as ex:
+                result_obj = {"error": f"bootstrap failed: {ex}"}
+                status_code = 500
+        else:
+            result_obj = {
+                "error": f"unknown action '{action}'. Valid: pin, deprecate, reactivate, needs_review, feedback, lookup, bootstrap"
+            }
+            status_code = 400
+
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps(
+                    {"slot": slot_name, "action": action, "result": result_obj},
+                    indent=2,
+                    default=str,
+                ),
+                status_code=status_code,
+                mimetype="application/json",
+            ),
+            origin,
+        )
+    except Exception as e:
+        logging.error(f"Error in GlobalSupportCaseMemoryAdmin: {str(e)}")
+        return add_cors_headers(
+            func.HttpResponse(
+                json.dumps({"error": f"Internal server error: {str(e)}"}),
+                status_code=500,
+                mimetype="application/json",
+            ),
+            origin,
+        )

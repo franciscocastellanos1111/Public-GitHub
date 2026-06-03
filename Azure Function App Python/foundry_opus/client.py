@@ -17,6 +17,9 @@ class FoundryClient:
                 timeout=self.config.timeout,
                 max_retries=self.config.max_retries,
             )
+            # Flips to False permanently for this client if the relay rejects the
+            # `thinking` parameter, so we stop attempting it for the rest of the run.
+            self._thinking_supported = True
         except FoundryConfigError:
             raise
         except Exception as e:
@@ -59,6 +62,7 @@ class FoundryClient:
         tools: Optional[list[dict]] = None,
         tool_choice: Optional[dict] = None,
         extra: Optional[dict] = None,
+        thinking: Optional[bool] = None,
     ):
         try:
             kwargs: dict[str, Any] = {
@@ -79,6 +83,35 @@ class FoundryClient:
                 kwargs["tool_choice"] = tool_choice
             if extra:
                 kwargs.update(extra)
+
+            # Extended thinking is opt-IN per call (thinking=True) so that direct
+            # callers like PDF/image OCR and `complete()` are unaffected. It also
+            # requires a configured budget and relay support.
+            want_thinking = (
+                thinking is True
+                and self._thinking_supported
+                and self.config.thinking_budget > 0
+            )
+            if want_thinking:
+                budget = min(self.config.thinking_budget, max(1024, kwargs["max_tokens"] - 1024))
+                thinking_kwargs = dict(kwargs)
+                thinking_kwargs["thinking"] = {"type": "enabled", "budget_tokens": budget}
+                # Extended thinking requires the default temperature — omit it.
+                thinking_kwargs.pop("temperature", None)
+                if self.config.interleaved_thinking and tools:
+                    thinking_kwargs["extra_headers"] = {
+                        **(thinking_kwargs.get("extra_headers") or {}),
+                        "anthropic-beta": "interleaved-thinking-2025-05-14",
+                    }
+                try:
+                    return self._client.messages.create(**thinking_kwargs)
+                except anthropic.APIStatusError as te:
+                    if self._is_thinking_unsupported(te):
+                        # Relay does not support `thinking` — disable for the rest of
+                        # this client's life and fall through to a normal request.
+                        self._thinking_supported = False
+                    else:
+                        raise
 
             return self._client.messages.create(**kwargs)
         except anthropic.APIStatusError as e:
@@ -112,6 +145,18 @@ class FoundryClient:
             raise FoundryAPIError(f"stream() failed: {e}") from e
         except Exception as e:
             raise FoundryAPIError(f"stream() unexpected error: {e}") from e
+
+    @staticmethod
+    def _is_thinking_unsupported(err: "anthropic.APIStatusError") -> bool:
+        """Heuristic: did the relay reject the request specifically because of the
+        `thinking` parameter (unsupported / unknown field / bad budget)?"""
+        try:
+            if getattr(err, "status_code", None) not in (400, 404, 422):
+                return False
+            blob = (str(getattr(err, "body", "")) + " " + str(err)).lower()
+            return "thinking" in blob or "budget_tokens" in blob
+        except Exception:
+            return False
 
     @staticmethod
     def _extract_text(response) -> str:

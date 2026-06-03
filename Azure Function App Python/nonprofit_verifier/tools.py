@@ -316,6 +316,70 @@ def _parse_ddg_results(html: str, max_n: int) -> list[dict]:
         return []
 
 
+@tool(description=(
+    "Look up advisory hints learned from prior verification runs. "
+    "Hints are NOT confirmation \u2014 they are leads you must re-verify live. "
+    "Use this after `dynamics_get_case_overview` once you know the organization's country. "
+    "Common patterns to try: "
+    "category='RegistryUrlTemplate' scope_key=<ISO country code> to find known working registry URL patterns; "
+    "category='BlockedSource' scope_key='global' to find sources that previously failed (CAPTCHA, geo-block); "
+    "category='Registry' scope_key=<ISO> for known registry names; "
+    "category='QueryPattern' scope_key=<ISO> for previously successful web_search queries; "
+    "category='DocPattern' scope_key=<ISO> for document authenticity patterns. "
+    "Each result contains a 'Ref' field \u2014 if you use a hint and it works (or fails), grade it via "
+    "memory_proposals[] in your final submit_verification_result call with action='feedback', "
+    "ref=<that Ref>, outcome='success'|'failure'."
+))
+def memory_lookup(
+    category: str,
+    scope_key: str,
+    subject_contains: Optional[str] = None,
+    max_results: int = 8,
+) -> str:
+    try:
+        import json as _json
+        import sys as _sys
+        # Service module lives one directory up from the nonprofit_verifier package.
+        try:
+            import npv_memory_service as _mem
+        except ImportError:
+            _here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            if _here not in _sys.path:
+                _sys.path.insert(0, _here)
+            import npv_memory_service as _mem
+        rows = _mem.lookup_entries(
+            category=category,
+            scope_key=scope_key,
+            subject_contains=subject_contains,
+            max_results=max_results,
+        )
+        try:
+            refs = [r.get("Ref") for r in rows if r.get("Ref")]
+            if refs:
+                _mem.bump_use_count(refs)
+        except Exception:
+            pass
+        slim = []
+        for r in rows:
+            slim.append({
+                "ref": r.get("Ref"),
+                "category": r.get("Category"),
+                "scope_key": r.get("ScopeKey"),
+                "subject_key": r.get("SubjectKey"),
+                "subject": r.get("Subject"),
+                "content": r.get("Content"),
+                "source": r.get("Source"),
+                "confidence": r.get("Confidence"),
+                "status": r.get("Status"),
+                "success_count": r.get("SuccessCount"),
+                "failure_count": r.get("FailureCount"),
+                "last_confirmed": r.get("LastConfirmedDateUtc"),
+            })
+        return _json.dumps({"count": len(slim), "results": slim, "advisory": "Hints are NOT confirmation \u2014 verify live this run."}, default=str)
+    except Exception as e:
+        return f"[memory_lookup error: {e}]"
+
+
 ALL_TOOLS = [
     fetch_document_text,
     decode_attachment_text,
@@ -323,4 +387,5 @@ ALL_TOOLS = [
     classify_registration_number,
     scan_authenticity_indicators,
     web_search,
+    memory_lookup,
 ]

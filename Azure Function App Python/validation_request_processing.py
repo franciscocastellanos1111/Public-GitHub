@@ -357,7 +357,6 @@ async def get_validation_request_from_note(incident_id: str, note_title: str) ->
 
 async def create_annotation(incident_id: str, subject: str, notetext: str, **kwargs) -> Dict:
     try:
-        #baypassed by dynamics_tools.py
         annotation = {
             "objectid_incident@odata.bind": f"/incidents({incident_id})",
             "subject": subject,
@@ -372,21 +371,13 @@ async def create_annotation(incident_id: str, subject: str, notetext: str, **kwa
         endpoint_path += "?$select=" + ",".join(select_columns)
         additional_headers["Prefer"] = "return=representation"
 
-        # print(f"Creating annotation for incident {incident_id} with subject '{subject}'")
-        # result = await general_dataverse_webapi_request("POST", endpoint_path, annotation, additional_headers)
+        print(f"Creating annotation for incident {incident_id} with subject '{subject}'")
+        result = await general_dataverse_webapi_request("POST", endpoint_path, annotation, additional_headers)
 
-        # if result.get("success") is False:
-        #     print("Failed to create annotation")
+        if result.get("success") is False:
+            print("Failed to create annotation")
 
-        # return result
-    
-        return  json.dumps({
-            "annotationid": "2c3130df-b9ba-4b9e-913e-ef269420850f",  # placeholder until we can return the real annotation id
-            "success": True,
-            "subject": subject,
-        })
-    
-
+        return result
 
     except Exception as e:
         print(f"Error in create_annotation: {e}")

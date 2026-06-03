@@ -1,0 +1,7 @@
+{
+    "extraPaths": [
+        "../Foundry Opus 4.7 Agentic Library",
+        "../Nonprofit Verification Agent"
+    ],
+    "reportMissingImports": "warning"
+}

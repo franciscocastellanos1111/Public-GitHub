@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import socket
 import threading
 import traceback
@@ -153,6 +154,74 @@ def archive_message(
 # Use a safety margin so the truncation marker still fits.
 _MAX_STR_PROP_CHARS = 31000
 
+# ResultJson can far exceed a single 31K string property, so we split it across
+# ResultJson, ResultJson_2, ResultJson_3, ... and reassemble on read. The whole
+# ENTITY is capped at 1 MB by Azure Table Storage (strings stored UTF-16 = 2
+# bytes/char), so we bound the number of chunks to stay safely under that ceiling
+# while leaving room for the other properties. 14 * 31000 chars ≈ 868 KB.
+_RESULTJSON_CHUNK_PREFIX = "ResultJson_"
+_RESULTJSON_MAX_CHUNKS = 14
+_RESULTJSON_CHUNK_RE = re.compile(r"^ResultJson_\d+$")
+
+
+def _clear_result_json_chunks(archive: dict) -> None:
+    """Remove any existing ResultJson_N chunk + bookkeeping props (in place).
+
+    Needed before re-chunking because the same `archive` dict is reused across
+    status updates and upsert(REPLACE) only persists the keys present in the dict.
+    """
+    for k in [k for k in list(archive.keys()) if _RESULTJSON_CHUNK_RE.match(str(k))]:
+        del archive[k]
+    archive.pop("ResultJsonChunks", None)
+
+
+def _split_result_json(archive: dict, logger=logging) -> None:
+    """Split an oversize ResultJson across ResultJson + ResultJson_2.. chunks.
+
+    No-op when ResultJson is absent or already fits in one property. If the value
+    is so large it would exceed the entity budget, the tail is truncated with a
+    marker (logged) — but this gives ~14x the previous single-property capacity.
+    """
+    if not archive:
+        return
+    _clear_result_json_chunks(archive)
+    rj = archive.get("ResultJson")
+    if not isinstance(rj, str) or len(rj) <= _MAX_STR_PROP_CHARS:
+        return
+
+    chunks = [rj[i:i + _MAX_STR_PROP_CHARS] for i in range(0, len(rj), _MAX_STR_PROP_CHARS)]
+    if len(chunks) > _RESULTJSON_MAX_CHUNKS:
+        kept = chunks[:_RESULTJSON_MAX_CHUNKS]
+        dropped = len(rj) - sum(len(c) for c in kept)
+        marker = f"...[TRUNCATED {dropped} chars]"
+        kept[-1] = kept[-1][: _MAX_STR_PROP_CHARS - len(marker)] + marker
+        chunks = kept
+        logger.warning(
+            f"npv_archive_service - ResultJson exceeded {_RESULTJSON_MAX_CHUNKS} chunks; "
+            f"truncated {dropped} chars"
+        )
+
+    archive["ResultJson"] = chunks[0]
+    for idx, chunk in enumerate(chunks[1:], start=2):
+        archive[f"{_RESULTJSON_CHUNK_PREFIX}{idx}"] = chunk
+    if len(chunks) > 1:
+        archive["ResultJsonChunks"] = len(chunks)
+
+
+def _reassemble_result_json(entity) -> str:
+    """Join ResultJson + ResultJson_2 + ResultJson_3 ... back into one string."""
+    rj = entity.get("ResultJson")
+    parts = [rj if isinstance(rj, str) else ""]
+    idx = 2
+    while True:
+        key = f"{_RESULTJSON_CHUNK_PREFIX}{idx}"
+        val = entity.get(key)
+        if val is None:
+            break
+        parts.append(val if isinstance(val, str) else "")
+        idx += 1
+    return "".join(parts)
+
 
 def _truncate_oversize_string_props(archive: dict, logger=logging) -> None:
     if not archive:
@@ -179,6 +248,9 @@ def _update(archive: dict, logger=logging) -> None:
         if table_client is None:
             logger.error("npv_archive_service - _update: no table client")
             return
+        # Split an oversize ResultJson across ResultJson_N chunks BEFORE the generic
+        # truncation pass (each resulting chunk is <= the per-property limit).
+        _split_result_json(archive, logger)
         _truncate_oversize_string_props(archive, logger)
         try:
             table_client.upsert_entity(entity=archive, mode=UpdateMode.REPLACE)
@@ -186,6 +258,7 @@ def _update(archive: dict, logger=logging) -> None:
             # Last-resort defense: drop the largest string properties and retry once,
             # so we never leave a row stuck in "Processing" because of payload size.
             logger.error(f"npv_archive_service - upsert failed, retrying with reduced payload: {upsert_ex}")
+            _clear_result_json_chunks(archive)  # drop chunk props so the retry payload is small
             for k in ("ResultJson", "MessageJson", "ExceptionDetails", "ProcessingNotes", "ErrorMessage"):
                 if isinstance(archive.get(k), str) and len(archive[k]) > 1000:
                     archive[k] = archive[k][:1000] + "...[REDUCED]"
@@ -349,11 +422,31 @@ def build_and_execute_adhoc_query(query_fields: dict, slot_name: str, logger=log
         if query_fields.get("rowKey"):
             filters.append(f"RowKey eq '{_escape(query_fields['rowKey'])}'")
 
-        if query_fields.get("requestId"):
-            filters.append(f"RequestId eq '{_escape(query_fields['requestId'])}'")
+        request_id_value = query_fields.get("requestId")
+        if request_id_value:
+            if isinstance(request_id_value, (list, tuple, set)):
+                request_id_clauses = [
+                    f"RequestId eq '{_escape(rid)}'"
+                    for rid in request_id_value
+                    if rid is not None and str(rid) != ""
+                ]
+                if request_id_clauses:
+                    filters.append("(" + " or ".join(request_id_clauses) + ")")
+            else:
+                filters.append(f"RequestId eq '{_escape(request_id_value)}'")
 
-        if query_fields.get("caseId"):
-            filters.append(f"CaseId eq '{_escape(query_fields['caseId'])}'")
+        case_id_value = query_fields.get("caseId")
+        if case_id_value:
+            if isinstance(case_id_value, (list, tuple, set)):
+                case_id_clauses = [
+                    f"CaseId eq '{_escape(cid)}'"
+                    for cid in case_id_value
+                    if cid is not None and str(cid) != ""
+                ]
+                if case_id_clauses:
+                    filters.append("(" + " or ".join(case_id_clauses) + ")")
+            else:
+                filters.append(f"CaseId eq '{_escape(case_id_value)}'")
 
         if query_fields.get("functionName"):
             filters.append(f"FunctionName eq '{_escape(query_fields['functionName'])}'")
@@ -401,7 +494,7 @@ def build_and_execute_adhoc_query(query_fields: dict, slot_name: str, logger=log
                 if message_contains.lower() not in mj.lower():
                     continue
             if result_contains:
-                rj = entity.get("ResultJson") or ""
+                rj = _reassemble_result_json(entity)
                 if result_contains.lower() not in rj.lower():
                     continue
             results.append(_serialize_entity(entity))
@@ -414,14 +507,21 @@ def build_and_execute_adhoc_query(query_fields: dict, slot_name: str, logger=log
 
 
 def _serialize_entity(entity) -> dict:
+    # Reassemble chunked ResultJson into one value, and hide the chunk/bookkeeping props.
+    full_result_json = _reassemble_result_json(entity)
     out = {}
     for k, v in entity.items():
+        if _RESULTJSON_CHUNK_RE.match(str(k)) or k == "ResultJsonChunks":
+            continue  # folded into ResultJson below
         if isinstance(v, datetime):
             out[k] = v.isoformat()
-        elif k == "ResultJson" and v:
-            try:
-                out[k] = json.loads(v)
-            except Exception:
+        elif k == "ResultJson":
+            if full_result_json:
+                try:
+                    out[k] = json.loads(full_result_json)
+                except Exception:
+                    out[k] = full_result_json
+            else:
                 out[k] = v
         else:
             out[k] = v

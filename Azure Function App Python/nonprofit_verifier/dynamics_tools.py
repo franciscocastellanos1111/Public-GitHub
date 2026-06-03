@@ -418,11 +418,6 @@ def dynamics_create_case_note(case_id: str, subject: str, notetext: str) -> str:
             "success": result.get("success") is not False,
             "subject": result.get("subject", subject),
         })
-        # return _json({
-        #     "annotationid": case_id,  # placeholder until we can return the real annotation id
-        #     "success": True,
-        #     "subject": subject,
-        # })
     except Exception as e:
         return _json({"error": str(e)})
 

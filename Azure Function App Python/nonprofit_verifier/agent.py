@@ -12,6 +12,7 @@ from .models import (
     DocumentFinding,
     EmailMessage,
     ExternalRegistryCheck,
+    MemoryProposal,
     Recommendation,
     RepresentativeAuthority,
     TokenUsage,
@@ -157,6 +158,34 @@ _SUBMIT_SCHEMA = {
                 "obtained. Leave null/omit only when at least one registry check is genuinely 'Confirmed' online."
             ),
         },
+        "memory_proposals": {
+            "type": "array",
+            "description": (
+                "OPTIONAL. Long-term memory updates the orchestrator should persist after this case completes. "
+                "Each item is either action='record' (teach a new fact: working registry URL, blocked source, doc "
+                "pattern, etc.) or action='feedback' (grade a memory entry returned earlier by `memory_lookup` "
+                "as success/failure). Do NOT propose to write personal data, customer-specific identifiers, or "
+                "unverified claims. Only propose facts you actually validated this run. Categories allowed: "
+                "Registry, RegistryUrlTemplate, BlockedSource, DocPattern, IssuingAuthority, QueryPattern, "
+                "OrgIdentity, Heuristic, KnownScam."
+            ),
+            "items": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["record", "feedback"]},
+                    "category": {"type": "string"},
+                    "scope_key": {"type": "string", "description": "ISO country code (e.g. 'BR') or 'global'"},
+                    "subject_key": {"type": "string", "description": "stable lower_snake identifier, e.g. 'cnpj_receitaws_v1'"},
+                    "subject": {"type": "string"},
+                    "content": {"type": "object"},
+                    "tags": {"type": "string"},
+                    "ref": {"type": "string", "description": "PartitionKey/RowKey returned by memory_lookup; required for action='feedback'"},
+                    "outcome": {"type": "string", "enum": ["success", "failure"]},
+                    "notes": {"type": "string"},
+                },
+                "required": ["action"],
+            },
+        },
     },
     "required": ["status", "confidence", "recommendation", "reasoning", "external_registry_checks"],
 }
@@ -223,7 +252,12 @@ class NonprofitVerificationAgent:
                 reason=f"Verification failed with error: {e}",
             )
 
-    def verify_by_case_id(self, case_id: str, max_iterations: Optional[int] = None) -> VerificationResult:
+    def verify_by_case_id(
+        self,
+        case_id: str,
+        max_iterations: Optional[int] = None,
+        memory_hints: Optional[list[dict]] = None,
+    ) -> VerificationResult:
         try:
             from .dynamics_tools import DYNAMICS_TOOLS
 
@@ -253,6 +287,17 @@ class NonprofitVerificationAgent:
                 on_tool_call=self.on_tool_call,
             )
 
+            hints_block = ""
+            if memory_hints:
+                try:
+                    hints_block = (
+                        "\n\nMEMORY HINTS (advisory only — NOT confirmation, MUST be re-verified live this run):\n"
+                        + json.dumps(memory_hints, indent=2, default=str)[:8000]
+                        + "\n"
+                    )
+                except Exception:
+                    hints_block = ""
+
             user_payload = (
                 "You are given ONLY a Dynamics 365 case id. Autonomously gather all relevant "
                 "evidence from the case (overview, customer reply email, notes, attachments) "
@@ -260,6 +305,7 @@ class NonprofitVerificationAgent:
                 "exactly once at the end.\n\n"
                 f"case_id: {case_id}\n\n"
                 "Begin by calling `dynamics_get_case_overview` with this case_id."
+                + hints_block
             )
             agent_result = agent.run(user_payload, reset=True)
             usage = _summarize_token_usage(agent_result)
@@ -368,6 +414,14 @@ class NonprofitVerificationAgent:
                     except Exception as reg_e:
                         extra_concerns.append(f"External registry check parse failed: {reg_e}")
 
+            memory_proposals: list[MemoryProposal] = []
+            for mp in (data.get("memory_proposals") or []):
+                if isinstance(mp, dict):
+                    try:
+                        memory_proposals.append(MemoryProposal(**mp))
+                    except Exception as mp_e:
+                        extra_concerns.append(f"Memory proposal parse failed: {mp_e}")
+
             confidence_value = ConfidenceLevel(data["confidence"])
             requires_human = bool(data.get("requires_human_review", True))
             doc_determination = data.get("document_based_determination") or None
@@ -432,6 +486,7 @@ class NonprofitVerificationAgent:
                 requires_human_review=requires_human,
                 analyzed_documents=[a.filename for a in request.email.attachments],
                 token_usage=token_usage,
+                memory_proposals=memory_proposals,
             )
             result.case_note = result.to_case_note()
             return result

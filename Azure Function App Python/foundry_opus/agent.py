@@ -28,9 +28,11 @@ class Agent:
         max_tokens: Optional[int] = None,
         on_tool_call: Optional[Callable[[str, dict], None]] = None,
         enable_prompt_caching: bool = True,
+        enable_thinking: bool = False,
     ):
         try:
             self.name = name
+            self.enable_thinking = enable_thinking
             self.system_prompt = system_prompt
             self.client = client or FoundryClient()
             self.registry = ToolRegistry()
@@ -80,6 +82,7 @@ class Agent:
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
                     tools=cached_tools,
+                    thinking=True if self.enable_thinking else None,
                 )
                 raw_responses.append(response)
                 stop_reason = getattr(response, "stop_reason", None)
@@ -90,6 +93,19 @@ class Agent:
                     btype = getattr(block, "type", None)
                     if btype == "text":
                         assistant_blocks.append({"type": "text", "text": block.text})
+                    elif btype == "thinking":
+                        # Must be preserved (with signature) in history so tool-use
+                        # turns remain valid when extended thinking is enabled.
+                        assistant_blocks.append({
+                            "type": "thinking",
+                            "thinking": getattr(block, "thinking", "") or "",
+                            "signature": getattr(block, "signature", "") or "",
+                        })
+                    elif btype == "redacted_thinking":
+                        assistant_blocks.append({
+                            "type": "redacted_thinking",
+                            "data": getattr(block, "data", "") or "",
+                        })
                     elif btype == "tool_use":
                         assistant_blocks.append({
                             "type": "tool_use",
