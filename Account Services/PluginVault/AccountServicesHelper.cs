@@ -20,6 +20,7 @@ using Microsoft.Xrm.Sdk.Messages;
 using Microsoft.Xrm.Sdk.Metadata;
 using System.Text.RegularExpressions;
 using System.IdentityModel.Metadata;
+using System.Xml;
 
 namespace AccountServices
 {
@@ -698,50 +699,588 @@ namespace AccountServices
         }
 
 
-        public static string regexReplace(string pattern, string expresion, string replaceWith)
+        public static dynamic getBusinessUnitAndTeam(string businessUnit
+                                                                        , IOrganizationService service, ITracingService tracingService)
+        {
+            AccountServicesHelper.writeToTrace($"getBusinessUnitAndTeam. Returning: dynamic businessUniTeam"
+                                                                            , tracingService);
+            dynamic businessUniTeam = new JObject();
+            try
+            {
+                QueryExpression queryBusinessUnit = new QueryExpression("businessunit");
+                queryBusinessUnit.ColumnSet = new ColumnSet("businessunitid", "name");
+                queryBusinessUnit.Criteria.AddCondition("name", ConditionOperator.Equal, businessUnit);
+                EntityCollection businessUnitCollection = service.RetrieveMultiple(queryBusinessUnit);
+
+                if (businessUnitCollection.Entities.Count == 0)
+                {
+                    AccountServicesHelper.writeToTrace($"assignAccountsToBusUnit: Business unit '{businessUnit}' not found."
+                                                                                                , tracingService);
+                    return businessUniTeam;
+                }
+
+                Entity targetBU = businessUnitCollection.Entities.First();
+                businessUniTeam.businessUnitId = targetBU.Id;
+
+
+                QueryExpression queryTeam = new QueryExpression("team");
+                queryTeam.ColumnSet = new ColumnSet("teamid", "name", "teamtype");
+                queryTeam.Criteria.AddCondition("businessunitid", ConditionOperator.Equal, targetBU.Id);
+                queryTeam.Criteria.AddCondition("name", ConditionOperator.Equal, businessUnit);
+                queryTeam.Criteria.AddCondition("teamtype", ConditionOperator.Equal, 0); // 0 = Owner team (default team)
+                EntityCollection teamCollection = service.RetrieveMultiple(queryTeam);
+
+
+                if (teamCollection.Entities.Count == 0)
+                    return businessUniTeam;
+
+                businessUniTeam.teamId = teamCollection.Entities.First().Id;
+            }
+            catch (Exception e)
+            {
+                AccountServicesHelper.writeToTrace($"Error in getBusinessUnitAndTeam. Exception message: {Environment.NewLine}{e.Message}"
+                                                                            , tracingService);
+            }
+
+
+            return businessUniTeam;
+        }
+
+        public static dynamic getConfigFromFieldMapping(string fieldName
+                                                                           , IOrganizationService service, ITracingService tracingService)
+        {
+            try
+            {
+                QueryExpression queryMapping = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryMapping.ColumnSet = new ColumnSet(true);
+                queryMapping.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, fieldName);
+                EntityCollection mappingCollection = service.RetrieveMultiple(queryMapping);
+
+                if (mappingCollection.Entities.Count == 0)
+                {
+                    writeToTrace($"Error in updateConfigOnFieldMapping(). ts_fieldname: '{fieldName}' was not found in ts_fieldhierarchyandmapping"
+                                                                                                    , tracingService);
+                    return null;
+                }
+                Entity fieldHierarchy = mappingCollection.Entities.First();
+
+                string configText = fieldHierarchy.GetAttributeValue<string>("ts_configuration");
+
+                dynamic configJson = JsonConvert.DeserializeObject(configText);
+
+                return configJson;
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"Error in getConfigFromFieldMapping(). Exception message:{Environment.NewLine}{e.Message}"
+                                                    + $"{Environment.NewLine}fieldName: {fieldName}"
+                                                                                                    , tracingService);
+                return null;
+            }
+        }
+
+        public static bool updateConfigOnFieldMapping(string fieldName, string configText
+                                                                            , IOrganizationService service, ITracingService tracingService)
+        {
+            try
+            {
+                QueryExpression queryMapping = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryMapping.ColumnSet = new ColumnSet(true);
+                queryMapping.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, fieldName);
+                EntityCollection mappingCollection = service.RetrieveMultiple(queryMapping);
+
+                if (mappingCollection.Entities.Count == 0)
+                {
+                    writeToTrace($"Error in updateConfigOnFieldMapping(). ts_fieldname: '{fieldName}' was not found in ts_fieldhierarchyandmapping"
+                                                                                                    , tracingService);
+                    return false;
+                }
+                Entity fieldHierarchy = mappingCollection.Entities.First();
+
+                fieldHierarchy["ts_configuration"] = configText;
+
+                service.Update(fieldHierarchy);
+
+                return true;
+
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"Error in updateConfigOnFieldMapping(). Exception message:{Environment.NewLine}{e.Message}"
+                                                    + $"{Environment.NewLine}fieldName: {fieldName}"
+                                                                                                    , tracingService);
+                return false;
+            }
+
+
+        }
+
+        public static Guid getTeamIdForGroup(string groupName
+                                                           , IOrganizationService service, ITracingService tracingService)
+        {
+            Guid teamId = Guid.Empty;
+            try
+            {
+                string businessUnitName = "TSValidationsGlobal";
+
+                Guid targetBUId;
+                QueryExpression queryTargetBU = new QueryExpression("businessunit");
+                queryTargetBU.ColumnSet = new ColumnSet("businessunitid", "name");
+                queryTargetBU.Criteria.AddCondition("name", ConditionOperator.Equal, businessUnitName);
+                EntityCollection targetBUCollection = service.RetrieveMultiple(queryTargetBU);
+
+                if (targetBUCollection.Entities.Count == 0)
+                {
+                    writeToTrace($"getTeamIdForGroup(). Business Unit: {businessUnitName}, not found"
+                                                                                                     , tracingService);
+                    return Guid.Empty;
+                }
+                targetBUId = targetBUCollection.Entities.First().Id;
+
+
+                QueryExpression queryExistingTeam = new QueryExpression("team");
+                queryExistingTeam.ColumnSet = new ColumnSet("teamid", "name");
+                queryExistingTeam.Criteria.AddCondition("name", ConditionOperator.Equal, groupName);
+                //queryExistingTeam.Criteria.AddCondition("businessunitid", ConditionOperator.Equal, targetBUId);
+                EntityCollection existingTeamCollection = service.RetrieveMultiple(queryExistingTeam);
+
+                if (existingTeamCollection.Entities.Count > 0)
+                {
+                    teamId = existingTeamCollection.Entities.First().Id;
+                }
+                else
+                {
+
+                    Entity newTeam = new Entity("team");
+                    newTeam["name"] = groupName;
+                    newTeam["businessunitid"] = new EntityReference("businessunit", targetBUId);
+                    newTeam["teamtype"] = new OptionSetValue(0); // 0 = Owner team
+
+                    teamId = service.Create(newTeam);
+                }
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"Error in getTeamIdForGroup(...). Exception message:{Environment.NewLine}{e.Message}"
+                                                                                                                , tracingService);
+            }
+
+            return teamId;
+        }
+
+        public static bool existsTeamName(string teamName
+                                                           , IOrganizationService service, ITracingService tracingService)
+        {
+            bool existsTeam = false;
+            try
+            {
+                string businessUnitName = "TSValidationsGlobal";
+
+                Guid targetBUId;
+                QueryExpression queryTargetBU = new QueryExpression("businessunit");
+                queryTargetBU.ColumnSet = new ColumnSet("businessunitid", "name");
+                queryTargetBU.Criteria.AddCondition("name", ConditionOperator.Equal, businessUnitName);
+                EntityCollection targetBUCollection = service.RetrieveMultiple(queryTargetBU);
+
+                if (targetBUCollection.Entities.Count == 0)
+                {
+                    writeToTrace($"existsTeamName(). Business Unit: {businessUnitName}, not found"
+                                                                                                     , tracingService);
+                    return false;
+                }
+                targetBUId = targetBUCollection.Entities.First().Id;
+
+
+                QueryExpression queryExistingTeam = new QueryExpression("team");
+                queryExistingTeam.ColumnSet = new ColumnSet("teamid", "name");
+                queryExistingTeam.Criteria.AddCondition("name", ConditionOperator.Equal, teamName);
+                queryExistingTeam.Criteria.AddCondition("businessunitid", ConditionOperator.Equal, targetBUId);
+                EntityCollection existingTeamCollection = service.RetrieveMultiple(queryExistingTeam);
+
+                if (existingTeamCollection.Entities.Count > 0)
+                    existsTeam = true;
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"Error in existsTeamName(). Exception message:{Environment.NewLine}{e.Message}"
+                                                                                                                , tracingService);
+            }
+            return existsTeam;
+        }
+
+
+        public static bool createTeamRoleAssoc(Guid teamId, string roleName
+                                                                    , IOrganizationService service, ITracingService tracingService)
+        {
+            try
+            {
+                QueryExpression queryRole = new QueryExpression("role");
+                queryRole.ColumnSet = new ColumnSet("roleid", "name");
+                queryRole.Criteria.AddCondition("name", ConditionOperator.Equal, roleName);
+                EntityCollection roleCollection = service.RetrieveMultiple(queryRole);
+
+                if (roleCollection.Entities.Count == 0)
+                {
+                    writeToTrace($"createTeamRoleAssoc: Role '{roleName}' not found"
+                                                                                      , tracingService);
+                    return false;
+                }
+
+                Guid roleId = roleCollection.Entities.First().Id;
+
+                QueryExpression queryTeamRole = new QueryExpression("teamroles");
+                queryTeamRole.Criteria.AddCondition("teamid", ConditionOperator.Equal, teamId);
+                queryTeamRole.Criteria.AddCondition("roleid", ConditionOperator.Equal, roleId);
+                EntityCollection teamRoleCollection = service.RetrieveMultiple(queryTeamRole);
+
+                if (teamRoleCollection.Entities.Count > 0)
+                    return true;
+
+                EntityReferenceCollection roleRefCollection = new EntityReferenceCollection();
+                roleRefCollection.Add(new EntityReference("role", roleId));
+                service.Associate("team", teamId, new Relationship("teamroles_association"), roleRefCollection);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"createTeamRoleAssoc: Error associating role '{roleName}' to team '{teamId}': {e.Message}"
+                                                                                                                , tracingService);
+                return false;
+            }
+        }
+
+        public static dynamic findCountryRegion(string value
+                                                        , string description
+                                                        , string optionSetName
+                                                        , IOrganizationService service, ITracingService tracingService
+                                                        , bool createNewIfNotFound = true)
+        {
+            Entity fieldMapping = null;
+            dynamic response = new JObject();
+            try
+            {
+                FilterExpression fieldNameFilter = new FilterExpression(LogicalOperator.Or);
+                fieldNameFilter.AddCondition("ts_fieldname", ConditionOperator.Equal, "CountryRegionGlobalSupport");
+                fieldNameFilter.AddCondition("ts_fieldname", ConditionOperator.Equal, "country");
+
+
+                FilterExpression valueFilter = new FilterExpression(LogicalOperator.And);
+                valueFilter.AddCondition("ts_value", ConditionOperator.Equal, value);
+
+                FilterExpression queryValueFilter = new FilterExpression(LogicalOperator.And);
+                queryValueFilter.AddFilter(fieldNameFilter);
+                queryValueFilter.AddFilter(valueFilter);
+
+                QueryExpression queryValueMapping = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryValueMapping.ColumnSet = new ColumnSet(true);
+                queryValueMapping.Criteria.AddFilter(queryValueFilter);
+                EntityCollection mappingValueCollection = service.RetrieveMultiple(queryValueMapping);
+
+                if (mappingValueCollection.Entities.Count > 0)
+                {
+                    fieldMapping = mappingValueCollection.Entities.First();
+                    response.valueCode = fieldMapping.GetAttributeValue<int>("ts_valuecode");
+                    response.value = fieldMapping.GetAttributeValue<string>("ts_value");
+                    response.isNew = false;
+
+                    return response;
+                }
+
+
+                FilterExpression descriptionFilter = new FilterExpression(LogicalOperator.And);
+                descriptionFilter.AddCondition("ts_valuedescription", ConditionOperator.Equal, description);
+
+                FilterExpression queryDescriptionFilter = new FilterExpression(LogicalOperator.And);
+                queryDescriptionFilter.AddFilter(fieldNameFilter);
+                queryDescriptionFilter.AddFilter(descriptionFilter);
+
+
+
+                QueryExpression queryDescriptionMapping = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryDescriptionMapping.ColumnSet = new ColumnSet(true);
+                queryDescriptionMapping.Criteria.AddFilter(queryDescriptionFilter);
+                EntityCollection mappingDescriptionCollection = service.RetrieveMultiple(queryDescriptionMapping);
+
+                if (mappingDescriptionCollection.Entities.Count > 0)
+                {
+                    fieldMapping = mappingDescriptionCollection.Entities.First();
+                    response.valueCode = fieldMapping.GetAttributeValue<int>("ts_valuecode");
+                    response.value = fieldMapping.GetAttributeValue<string>("ts_value");
+                    response.isNew = false;
+
+                    return response;
+                }
+
+                if (!createNewIfNotFound)
+                    return response;
+
+
+                QueryExpression queryMapping = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryMapping.ColumnSet = new ColumnSet(true);
+                queryMapping.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "CountryRegionGlobalSupport");
+                queryMapping.TopCount = 1;
+                queryMapping.AddOrder("ts_valuecode", OrderType.Descending);
+                EntityCollection queryMappingCollection = service.RetrieveMultiple(queryMapping);
+
+                if (queryMappingCollection.Entities.Count == 0)
+                    return response;
+
+                Entity latestFieldMapping = queryMappingCollection.Entities.First();
+
+                int valueCode = latestFieldMapping.GetAttributeValue<int>("ts_valuecode") + 1;
+
+
+                Entity newFieldMapping = new Entity("ts_fieldhierarchyandmapping");
+
+                newFieldMapping["ts_fieldname"] = "CountryRegionGlobalSupport";
+
+                newFieldMapping["ts_valuecode"] = valueCode;
+
+                newFieldMapping["ts_value"] = value;
+
+                newFieldMapping["ts_name"] = value;
+
+
+
+                newFieldMapping["ts_valueseq"] = valueCode;
+
+                //newFieldMapping["ts_mappedfieldvalue"] = 
+                //newFieldMapping["ts_mappedfieldvaluecode"] = 
+
+                newFieldMapping["ts_valuedescription"] = description;
+
+                Guid newFieldMappingId = service.Create(newFieldMapping);
+
+
+                addOptionSet(optionSetName, valueCode, description
+                                                                    , service, tracingService);
+
+                response.valueCode = valueCode;
+                response.value = value;
+                response.isNew = true;
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"Error in findCountryRegion(). Exception message:{Environment.NewLine}{e.Message}"
+                                                                                                            , tracingService);
+            }
+
+
+            return response;
+        }
+
+
+        public static dynamic identifyCountryRegionInName(string name
+                                                                    , IOrganizationService service, ITracingService tracingService)
+        {
+            name = name.Replace("UK", "GB");
+            string[] nameWords = name.Split(' ');
+            int wordsCount = nameWords.Length;
+
+            List<string> wordList = nameWords.ToList();
+
+            if (wordsCount >= 2)
+            {
+                string lastTwoWords = nameWords[wordsCount - 2] + " " + nameWords[wordsCount - 1];
+                wordList.Add(lastTwoWords);
+            }
+
+            nameWords = wordList.ToArray();
+
+            dynamic response = new JObject();
+            try
+            {
+                FilterExpression fieldNameFilter = new FilterExpression(LogicalOperator.Or);
+                fieldNameFilter.AddCondition("ts_fieldname", ConditionOperator.Equal, "CountryRegionGlobalSupport");
+                fieldNameFilter.AddCondition("ts_fieldname", ConditionOperator.Equal, "country");
+
+
+                QueryExpression queryCountryRegion = new QueryExpression("ts_fieldhierarchyandmapping");
+                queryCountryRegion.ColumnSet = new ColumnSet(true);
+                queryCountryRegion.Criteria.AddFilter(fieldNameFilter);
+                EntityCollection countryRegionCollection = service.RetrieveMultiple(queryCountryRegion);
+
+                List<Entity> countryRegions = countryRegionCollection.Entities.ToList();
+
+                Entity countryRegion = countryRegions.Where(countryRegionItem =>
+                                    nameWords.Contains(countryRegionItem.GetAttributeValue<string>("ts_value"))
+                                    || nameWords.Contains(countryRegionItem.GetAttributeValue<string>("ts_valuedescription"))
+                )?.FirstOrDefault();
+
+                if (countryRegion == null)
+                    return response;
+
+                response.valueCode = countryRegion.GetAttributeValue<int>("ts_valuecode");
+                response.value = countryRegion.GetAttributeValue<string>("ts_value");
+
+                return response;
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"Error in IdentifyCountryRegionInName(). Exception message:{Environment.NewLine}{e.Message}"
+                                                                                                                            , tracingService);
+
+
+            }
+
+            return response;
+        }
+        public static bool addOptionSet(string optionSetName, int value, string choice
+                                                                            , IOrganizationService service, ITracingService tracingService)
+        {
+            bool success = true;
+            try
+            {
+
+                RetrieveOptionSetRequest retrieveOptionSetRequest = new RetrieveOptionSetRequest
+                {
+                    Name = optionSetName
+                };
+                //CreateOptionSetRequest createOptionSetRequest = new CreateOptionSetRequest();
+
+                RetrieveOptionSetResponse retrieveOptionSetResponse = (RetrieveOptionSetResponse)service.Execute(retrieveOptionSetRequest);
+                OptionSetMetadata retrievedOptionSetMetadata = (OptionSetMetadata)retrieveOptionSetResponse.OptionSetMetadata;
+                OptionMetadataCollection options = retrievedOptionSetMetadata.Options;
+                OptionMetadata option = options.ToList().Find(item => item.Value == value);
+
+                if (option == null)
+                {
+                    InsertOptionValueRequest request = new InsertOptionValueRequest();
+                    request.OptionSetName = optionSetName;
+                    request.Value = value;
+                    request.Label = new Label(choice, 1033);
+                    //request.SolutionUniqueName = solutionName;
+
+                    InsertOptionValueResponse response = (InsertOptionValueResponse)service.Execute(request);
+                }
+                else
+                {
+                    UpdateOptionValueRequest request = new UpdateOptionValueRequest();
+                    request.OptionSetName = optionSetName;
+                    request.Value = value;
+                    request.Label = new Label(choice, 1033);
+                    request.MergeLabels = true;
+
+                    UpdateOptionValueResponse response = (UpdateOptionValueResponse)service.Execute(request);
+                }
+            }
+            catch (Exception e)
+            {
+                writeToTrace("Error in addOptionSet(). Exception message: " + "\n" + e.Message
+                                                                                                , tracingService);
+                success = false;
+            }
+
+            return success;
+        }
+
+
+
+        public static EntityReference resolveCustomerForEmail(string emailAddress
+                                                                            , IOrganizationService service, ITracingService tracingService)
+        {
+            EntityReference customerRef = null;
+            try
+            {
+                QueryExpression queryAccount = new QueryExpression("account");
+                queryAccount.Criteria.AddCondition("emailaddress1", ConditionOperator.Equal, emailAddress);
+                EntityCollection accountCollection = service.RetrieveMultiple(queryAccount);
+
+                if (accountCollection.Entities.Count == 1)
+                {
+                    customerRef = new EntityReference("account", accountCollection.Entities.First().Id);
+                    return customerRef;
+                }
+
+                QueryExpression queryContact = new QueryExpression("contact");
+                queryContact.Criteria.AddCondition("emailaddress1", ConditionOperator.Equal, emailAddress);
+                EntityCollection contactCollection = service.RetrieveMultiple(queryContact);
+
+                if (contactCollection.Entities.Count > 0)
+                {
+                    Guid contactId = contactCollection.Entities.First().Id;
+
+                    QueryExpression queryConnection = new QueryExpression("connection");
+                    queryConnection.ColumnSet = new ColumnSet("record2id");
+                    FilterExpression filterConnection = new FilterExpression(LogicalOperator.And);
+                    filterConnection.AddCondition("record1id", ConditionOperator.Equal, contactId);
+                    filterConnection.AddCondition("statecode", ConditionOperator.Equal, 0);
+                    filterConnection.AddCondition("record2objecttypecode", ConditionOperator.Equal, 1);
+                    queryConnection.Criteria.AddFilter(filterConnection);
+                    EntityCollection connectionCollection = service.RetrieveMultiple(queryConnection);
+
+                    if (connectionCollection.Entities.Count == 1)
+                    {
+                        Entity connectionEntity = connectionCollection.Entities.First();
+                        Guid accountId = connectionEntity.GetAttributeValue<EntityReference>("record2id").Id;
+                        customerRef = new EntityReference("account", accountId);
+                        return customerRef;
+                    }
+
+                    customerRef = new EntityReference("contact", contactId);
+                    return customerRef;
+                }
+            }
+            catch (Exception e)
+            {
+                writeToTrace($"Error in resolveCustomerForEmail(). Exception message:{Environment.NewLine}{e.Message}"
+                                                    + $"{Environment.NewLine}emailAddress: {emailAddress}"
+                                                    , tracingService);
+            }
+
+            return customerRef;
+        }
+
+        public static bool isOneWordAllCapitals(string input)
+        {
+            if (string.IsNullOrEmpty(input) || input.Trim().Contains(' '))
+                return false;
+
+            return input.Trim() == input.Trim().ToUpper();
+        }
+        public static string regexReplace(string pattern, string expresion, string replaceWith, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
             string convExpresion = expresion;
 
-            Regex regexObj = new Regex(pattern);
-            convExpresion = regexObj.Replace(convExpresion, replaceWith);
+            Regex regexObj = new Regex(pattern, regexOptions);
+            convExpresion = regexObj.Replace(expresion, replaceWith);
 
             return convExpresion;
         }
 
-        public static bool regexMatch(string pattern, string input)
+        public static bool regexMatch(string pattern, string input, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regex = new Regex(@pattern);
+            Regex regex = new Regex(pattern, regexOptions);
             return regex.IsMatch(input);
         }
 
-        public static int regexMatchPos(string pattern, string input, int startAt)
+        public static int regexMatchPos(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regexObj = new Regex(@pattern);
+            Regex regexObj = new Regex(pattern, regexOptions);
 
             Match match = regexObj.Match(input, startAt);
 
             return match.Index;
         }
 
-        public static string regexMatchValue(string pattern, string input, int startAt)
+        public static string regexMatchValue(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regexObj = new Regex(@pattern);
+            Regex regexObj = new Regex(pattern, regexOptions);
 
             Match match = regexObj.Match(input, startAt);
 
             return match.Value;
         }
 
-        public static bool regexMatchSuccess(string pattern, string input, int startAt)
+        public static bool regexMatchSuccess(string pattern, string input, int startAt, RegexOptions regexOptions = RegexOptions.IgnoreCase)
         {
-            Regex regexObj = new Regex(@pattern);
+            Regex regexObj = new Regex(pattern, regexOptions);
 
             Match match = regexObj.Match(input, startAt);
 
             return match.Success;
         }
-
-
         public static string getErrorsFromStack(List<string> errorStack)
         {
             string errorStackText = string.Empty;
@@ -841,7 +1380,250 @@ namespace AccountServices
             return caseId;
         }
 
+        public static Guid createContact(string tsContactId, Dictionary<string, string> envVariables
+                                                                   , IOrganizationService service, ITracingService tracingService, List<string> errorStack)
+        {
+            Guid contactId = Guid.Empty;
+            try
+            {
 
+                Entity contact = getOnyxIndividualInfo(tsContactId, envVariables
+                                                                   , service, tracingService, errorStack);
+
+
+
+                Entity contactEntity = new Entity("contact");
+
+                contactEntity["firstname"] = contact.GetAttributeValue<string>("vchFirstName");
+                contactEntity["lastname"] = contact.GetAttributeValue<string>("vchLastName");
+                contactEntity["emailaddress1"] = contact.GetAttributeValue<string>("chEmailAddress");
+                contactEntity["ts_emailvalidationstatus"] = new OptionSetValue(int.Parse(contact.GetAttributeValue<string>("emailValidationStatus")));
+                contactEntity["new_contactaccountnumber"] = contact.GetAttributeValue<string>("iIndividualId");
+
+
+                if (!string.IsNullOrEmpty(contact.GetAttributeValue<string>("iSourceId")))
+                {
+                    contactEntity["new_source"] = new OptionSetValue(int.Parse(contact.GetAttributeValue<string>("iSourceId")));
+                }
+
+
+                if (!string.IsNullOrEmpty(contact.GetAttributeValue<string>("iUserSubTypeId")))
+                    contactEntity["ts_contactsubtype"] = new OptionSetValue(1);
+
+
+                contactEntity["new_ctpverificationcode"] = contact.GetAttributeValue<string>("ctpVerificationCode");
+                contactEntity["adx_identity_username"] = contact.GetAttributeValue<string>("vchAssignedId");
+
+                string countryCode = contact.GetAttributeValue<string>("chCountryCode")?.Trim();
+                string regionCode = contact.GetAttributeValue<string>("chRegionCode")?.Trim();
+                if (!string.IsNullOrEmpty(countryCode))
+                    contactEntity["address1_country"] = countryCode;
+                if (!string.IsNullOrEmpty(regionCode))
+                    contactEntity["address1_stateorprovince"] = regionCode;
+
+                if (!string.IsNullOrEmpty(contact.GetAttributeValue<string>("vchAddress1")))
+                    contactEntity["address1_addresstypecode"] = new OptionSetValue(3);
+
+                contactEntity["address1_line1"] = contact.GetAttributeValue<string>("vchAddress1");
+                contactEntity["address1_line2"] = contact.GetAttributeValue<string>("vchAddress2");
+                contactEntity["address1_line3"] = contact.GetAttributeValue<string>("vchAddress3");
+                contactEntity["address1_city"] = contact.GetAttributeValue<string>("vchCity");
+
+
+                string postalCode = contact.GetAttributeValue<string>("vchPostCode");
+                if (!string.IsNullOrEmpty(postalCode))
+                    contactEntity["address1_postalcode"] = postalCode.Length > 20 ? postalCode.Substring(0, 19) : postalCode;
+
+                if (!string.IsNullOrEmpty(contact.GetAttributeValue<string>("dynCountryValueCode")))
+                    contactEntity["ts_countrydesc"] = new OptionSetValue(int.Parse(contact.GetAttributeValue<string>("dynCountryValueCode")));
+
+                if (!string.IsNullOrEmpty(contact.GetAttributeValue<string>("dynStateProvValueCode")))
+                    contactEntity["ts_stateprovdesc"] = new OptionSetValue(int.Parse(contact.GetAttributeValue<string>("dynStateProvValueCode")));
+
+                contactEntity["ts_userlockedstatus"] = contact.GetAttributeValue<string>("vchUser7") == "1" ? true : false;
+
+                DateTime result;
+                if (DateTime.TryParse(contact.GetAttributeValue<string>("vchUser8"), out result))
+                    contactEntity["ts_userlockeddate"] = TimeZoneInfo.ConvertTimeToUtc(result, pstZone);
+
+
+
+                DateTime createdDateUTC = TimeZoneInfo.ConvertTimeToUtc(DateTime.Parse(contact.GetAttributeValue<string>("dtInsertDate")), pstZone);
+                contactEntity["overriddencreatedon"] = createdDateUTC;
+
+                contactId = service.Create(contactEntity);
+
+            }
+            catch (Exception e)
+            {
+
+                string error = "Error in createContact(...). Exception message: " + Environment.NewLine + e.Message
+                    + Environment.NewLine + "tsContactId: " + tsContactId;
+                writeToTrace(error, tracingService);
+                errorStack.Add(error);
+            }
+
+            return contactId;
+        }
+
+        public static Guid getUserIdByFullName(string fullName
+                                                             , IOrganizationService service, ITracingService tracingService, List<string> errorStack)
+        {
+            Guid userId = Guid.Empty;
+            try
+            {
+                QueryExpression queryUser = new QueryExpression("systemuser");
+                queryUser.ColumnSet = new ColumnSet("fullname");
+                queryUser.Criteria.AddCondition("fullname", ConditionOperator.Equal, fullName);
+                EntityCollection userCollection = service.RetrieveMultiple(queryUser);
+
+
+                if (userCollection.Entities.Count == 0)
+                    return Guid.Empty;
+
+                Entity userEntity = userCollection.Entities.First();
+                userId = userEntity.Id;
+            }
+            catch (Exception e)
+            {
+                string error = "Error: " + e.Message;
+                writeToTrace("Error in getUserIdByFullName(). Exception message: " + "\n" + e.Message
+                                                                                                    , tracingService);
+                errorStack.Add(error);
+            }
+
+            return userId;
+        }
+
+    
+        public static Entity getOnyxIndividualInfo(string tsContactId, Dictionary<string, string> envVariables
+                                                                   , IOrganizationService service, ITracingService tracingService, List<string> errorStack)
+        {
+
+            Entity individual = null;
+            try
+            {
+
+                X509Certificate2 cer = GetVaultCertificate(envVariables, tracingService);
+
+                var binding = new BasicHttpsBinding();
+                binding.Security.Mode = BasicHttpsSecurityMode.Transport;
+                binding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Certificate;
+
+
+                DataAccessServiceClient dataAccessClient = new DataAccessServiceClient(binding, new EndpointAddress(envVariables["ts_ESBUrl"] + @"services/TSGDataAccessServiceEBS_V1"));
+                dataAccessClient.ClientCredentials.ClientCertificate.Certificate = cer;
+
+                ExecuteStoredProcRequestType objRequest = new ExecuteStoredProcRequestType();
+
+
+                objRequest.ServerName = envVariables["ts_Sql2kServer"];
+                objRequest.DBName = "DBAdmin";
+                objRequest.SPName = "usp_getContactInfo";
+
+                objRequest.@params = new inputParamsType();
+                XmlDocument doc = new XmlDocument();
+                List<XmlElement> elements = new List<XmlElement>();
+
+                XmlElement param1 = doc.CreateElement("TSContactId");
+                param1.InnerText = tsContactId;
+                elements.Add(param1);
+
+
+
+
+                objRequest.@params.Any = elements.ToArray();
+
+
+                ExecuteStoredProcResponseType dataAccessresponse = dataAccessClient.ExecuteStoredProc(objRequest);
+
+                rowType[] returnXml = dataAccessresponse.ReturnXml;
+
+                if (returnXml.Length == 0)
+                {
+                    string error = "At getOnyxIndividualInfo(...). No record was returned";
+                    writeToTrace(error, tracingService);
+                    errorStack.Add(error);
+                    return null;
+
+                }
+
+                rowType row = returnXml.First();
+
+                individual = new Entity();
+
+                individual.Attributes.Add("iIndividualId", row.Any[0].InnerText);
+                individual.Attributes.Add("iSiteId", row.Any[1].InnerText);
+                individual.Attributes.Add("chLanguageCode", row.Any[2].InnerText);
+                individual.Attributes.Add("vchAssignedId", row.Any[3].InnerText);
+                individual.Attributes.Add("vchSalutation", row.Any[4].InnerText);
+                individual.Attributes.Add("vchFirstName", row.Any[5].InnerText);
+                individual.Attributes.Add("vchMiddleName", row.Any[6].InnerText);
+                individual.Attributes.Add("vchLastName", row.Any[7].InnerText);
+                individual.Attributes.Add("vchSuffix", row.Any[8].InnerText);
+                individual.Attributes.Add("vchAddress1", row.Any[9].InnerText);
+                individual.Attributes.Add("vchAddress2", row.Any[10].InnerText);
+                individual.Attributes.Add("vchAddress3", row.Any[11].InnerText);
+                individual.Attributes.Add("vchCity", row.Any[12].InnerText);
+                individual.Attributes.Add("chRegionCode", row.Any[13].InnerText);
+                individual.Attributes.Add("chCountryCode", row.Any[14].InnerText);
+                individual.Attributes.Add("vchPostCode", row.Any[15].InnerText);
+                individual.Attributes.Add("vchPhoneNumber", row.Any[16].InnerText);
+                individual.Attributes.Add("vchEmailAddress", row.Any[17].InnerText);
+                individual.Attributes.Add("vchURL", row.Any[18].InnerText);
+                individual.Attributes.Add("chGender", row.Any[19].InnerText);
+                individual.Attributes.Add("iUserTypeId", row.Any[20].InnerText);
+                individual.Attributes.Add("iUserSubTypeId", row.Any[21].InnerText);
+                individual.Attributes.Add("iCompanyId", row.Any[22].InnerText);
+                individual.Attributes.Add("vchCompanyName", row.Any[23].InnerText);
+                individual.Attributes.Add("chTitleCode", row.Any[24].InnerText);
+                individual.Attributes.Add("vchTitleDesc", row.Any[25].InnerText);
+                individual.Attributes.Add("chDepartmentCode", row.Any[26].InnerText);
+                individual.Attributes.Add("vchDepartmentDesc", row.Any[27].InnerText);
+                individual.Attributes.Add("iPhoneTypeId", row.Any[28].InnerText);
+                individual.Attributes.Add("iAddressTypeId", row.Any[29].InnerText);
+                individual.Attributes.Add("iSourceId", row.Any[30].InnerText);
+                individual.Attributes.Add("iStatusId", row.Any[31].InnerText);
+                individual.Attributes.Add("bValidAddress", row.Any[32].InnerText);
+                individual.Attributes.Add("iAccessCode", row.Any[33].InnerText);
+                individual.Attributes.Add("bPrivate", row.Any[34].InnerText);
+                individual.Attributes.Add("vchUser1", row.Any[35].InnerText);
+                individual.Attributes.Add("vchUser2", row.Any[36].InnerText);
+                individual.Attributes.Add("vchUser3", row.Any[37].InnerText);
+                individual.Attributes.Add("vchUser4", row.Any[38].InnerText);
+                individual.Attributes.Add("vchUser5", row.Any[39].InnerText);
+                individual.Attributes.Add("vchUser6", row.Any[40].InnerText);
+                individual.Attributes.Add("vchUser7", row.Any[41].InnerText);
+                individual.Attributes.Add("vchUser8", row.Any[42].InnerText);
+                individual.Attributes.Add("vchUser9", row.Any[43].InnerText);
+                individual.Attributes.Add("vchUser10", row.Any[44].InnerText);
+                individual.Attributes.Add("chInsertBy", row.Any[45].InnerText);
+                individual.Attributes.Add("dtInsertDate", row.Any[46].InnerText);
+                individual.Attributes.Add("chUpdateBy", row.Any[47].InnerText);
+                individual.Attributes.Add("dtUpdateDate", row.Any[48].InnerText);
+                individual.Attributes.Add("tiRecordStatus", row.Any[49].InnerText);
+                individual.Attributes.Add("dtModifiedDate", row.Any[50].InnerText);
+                individual.Attributes.Add("customerType", row.Any[51].InnerText);
+                individual.Attributes.Add("emailValidationStatus", row.Any[52].InnerText);
+                individual.Attributes.Add("ctpVerificationCode", row.Any[53].InnerText);
+                individual.Attributes.Add("dynCountryValueCode", row.Any[54].InnerText);
+                individual.Attributes.Add("dynStateProvValueCode", row.Any[55].InnerText);
+
+
+
+
+            }
+            catch (Exception e)
+            {
+                string error = "Error in getOnyxIndividualInfo(...). Exception message: " + Environment.NewLine + e.Message;
+                writeToTrace(error, tracingService);
+                errorStack.Add(error);
+            }
+
+
+            return individual;
+
+        }
 
     }
 }

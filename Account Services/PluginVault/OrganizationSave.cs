@@ -27,6 +27,7 @@ using System.Security.Policy;
 using System.Net;
 using Microsoft.Xrm.Sdk.Messages;
 using System.Web.Configuration;
+using System.Data.Common;
 
 namespace AccountServices
 {
@@ -48,8 +49,8 @@ namespace AccountServices
                 serviceProvider.GetService(typeof(IPluginExecutionContext));
 
 
-            tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "Starting - AccountServices.OrganizationSave");
-            tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+            AccountServicesHelper.writeToTrace($"Starting - AccountServices.OrganizationSave"
+                                                                                            , tracingService);
 
             try
             {
@@ -68,16 +69,7 @@ namespace AccountServices
 
 
 
-                //OrganizationSave.printOut(tsRequest
-                //    , service, tracingService);
-
-
-                //removeEmptyParameters(tsRequest
-                    //, service, tracingService);
-
-
-                OrganizationSave.printOut(tsRequest
-                    , service, tracingService);
+             
 
 
                 Entity tsResult = new Entity();
@@ -90,12 +82,12 @@ namespace AccountServices
                     tsOrgId = tsRequest.GetAttributeValue<string>("TSOrgId");
 
                     postActionAccount = updateOrg(tsRequest, tsOrgId, tsResult
-                                                    , context, service, tracingService);
+                                                                            , context, service, tracingService, serviceFactory);
                 }
                 else
                 {
                     postActionAccount = createOrg(tsRequest, tsResult
-                                                    , context, service, tracingService);
+                                                                    , context, service, tracingService, serviceFactory);
                     if (postActionAccount != null)
                         tsOrgId = postActionAccount.GetAttributeValue<string>("accountnumber");
                 }
@@ -128,274 +120,14 @@ namespace AccountServices
 
             catch (Exception e)
             {
-
-                tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "Error during AccountServices.OrganizationSave: " + e.Message);
-                tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                AccountServicesHelper.writeToTrace($"Error during AccountServices.OrganizationSave:{Environment.NewLine}{e.Message}"
+                                                                                                                                , tracingService);
             }
 
-        }
-
-        public static void removeEmptyParameters(Entity tsRequest
-            , IOrganizationService service, ITracingService tracingService)
-        {
-            try
-            {
-                string[] objectAttributes = { "address", "legalIdentifiers", "budget", "associations", "organizationReferences" };
-
-                List<string> requestAttributes = tsRequest.Attributes.Keys.Where(key => !objectAttributes.Contains(key)).ToList();
-
-                tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "requestAttributes.Count(): " + requestAttributes.Count());
-
-                foreach (string requestAttribute in requestAttributes)
-                {
-                    tracingService.Trace("requestAttribute: " + requestAttribute);
-
-                    if (string.IsNullOrEmpty(tsRequest.GetAttributeValue<string>(requestAttribute))
-                        )
-                        tsRequest.Attributes.Remove(requestAttribute);
-                }
-
-
-                if (tsRequest.Contains("address"))
-                {
-                    Entity address = tsRequest.GetAttributeValue<Entity>("address");
-
-                    if (address.Attributes.Count() == 0)
-                        tsRequest.Attributes.Remove("address");                    
-                }
-
-                if (tsRequest.Contains("legalIdentifiers"))
-                {
-                    EntityCollection legalIdentifiers = tsRequest.GetAttributeValue<EntityCollection>("legalIdentifiers");
-
-                    foreach (Entity legalIdentifier in legalIdentifiers.Entities.ToList())
-                    {
-                        if (
-                             string.IsNullOrEmpty(legalIdentifier.GetAttributeValue<string>("type")) || string.IsNullOrEmpty(legalIdentifier.GetAttributeValue<string>("legalIdentifier"))
-                             )
-                            legalIdentifiers.Entities.Remove(legalIdentifier);
-                    }
-
-                }
-
-                if (tsRequest.Contains("budget"))
-                {
-                    Entity budget = tsRequest.GetAttributeValue<Entity>("budget");
-                    if (string.IsNullOrEmpty(budget.GetAttributeValue<string>("value"))
-                        || string.IsNullOrEmpty(budget.GetAttributeValue<string>("currencyCode"))
-                        )
-                        tsRequest.Attributes.Remove("budget");
-                }
-
-                if (tsRequest.Contains("associations"))
-                {
-                    EntityCollection associations = tsRequest.GetAttributeValue<EntityCollection>("associations");
-
-                    foreach (Entity association in associations.Entities.ToList())
-                    {
-                        if (
-                        string.IsNullOrEmpty(association.GetAttributeValue<string>("tsContactId"))
-                        || string.IsNullOrEmpty(association.GetAttributeValue<string>("tsContactType"))
-                            )
-                            associations.Entities.Remove(association);
-                    }
-                }
-
-                if (tsRequest.Contains("organizationReferences"))
-                {
-                    EntityCollection organizationReferences = tsRequest.GetAttributeValue<EntityCollection>("organizationReferences");
-
-                    foreach (Entity organizationReference in organizationReferences.Entities.ToList())
-                    {
-                        if (
-                            string.IsNullOrEmpty(organizationReference.GetAttributeValue<string>("referenceType"))
-                            || string.IsNullOrEmpty(organizationReference.GetAttributeValue<string>("referenceValue"))
-                            )
-                            organizationReferences.Entities.Remove(organizationReference);
-                    }
-                }
-
-                tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
-
-            }
-            catch (Exception e)
-            {
-
-                tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "Error in removeEmptyParameters(...): "
-                    + Environment.NewLine + e.Message
-                    );
-                tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
-            }
-        }
-
-
-        public static void printOut(Entity tsRequest
-            , IOrganizationService service, ITracingService tracingService)
-        {
-            try
-            {
-                Entity address = tsRequest.GetAttributeValue<Entity>("address");
-
-
-                EntityCollection legalIdentifiers = tsRequest.GetAttributeValue<EntityCollection>("legalIdentifiers");
-
-                string legalId = string.Empty;
-                if (legalIdentifiers.Entities.Count > 0)
-                {
-                    Entity legalIdEntity = legalIdentifiers.Entities.First();
-                    legalId = legalIdEntity.GetAttributeValue<string>("legalIdentifier");
-                }
-
-                string countrydesc = string.Empty;
-                string regionDesc = string.Empty;
-                QueryExpression queryFieldMap = null;
-                EntityCollection fieldMapCollection = null;
-
-                if (!string.IsNullOrEmpty(address.GetAttributeValue<string>("countryCode")) && !string.IsNullOrEmpty(address.GetAttributeValue<string>("regionCode")))
-                {
-                    queryFieldMap = new QueryExpression("ts_fieldhierarchyandmapping");
-                    queryFieldMap.ColumnSet = new ColumnSet(true);
-                    queryFieldMap.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "country");
-                    queryFieldMap.Criteria.AddCondition("ts_value", ConditionOperator.Equal, address.GetAttributeValue<string>("countryCode"));
-                    fieldMapCollection = service.RetrieveMultiple(queryFieldMap);
-
-
-
-
-                    if (fieldMapCollection.Entities.Count > 0)
-                    {
-                        Entity fieldHierarchy = fieldMapCollection.Entities.First();
-                        countrydesc = fieldHierarchy.GetAttributeValue<string>("ts_valuedescription");
-                    }
-
-
-                    queryFieldMap = new QueryExpression("ts_fieldhierarchyandmapping");
-                    queryFieldMap.ColumnSet = new ColumnSet(true);
-                    queryFieldMap.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "stateorprovince");
-                    queryFieldMap.Criteria.AddCondition("ts_parentfieldvalue", ConditionOperator.Equal, address.GetAttributeValue<string>("countryCode"));
-                    queryFieldMap.Criteria.AddCondition("ts_value", ConditionOperator.Equal, address.GetAttributeValue<string>("regionCode"));
-                    fieldMapCollection = service.RetrieveMultiple(queryFieldMap);
-
-
-                    if (fieldMapCollection.Entities.Count > 0)
-                    {
-                        Entity fieldHierarchy = fieldMapCollection.Entities.First();
-                        regionDesc = fieldHierarchy.GetAttributeValue<string>("ts_valuedescription");
-                    }
-
-                }
-                Entity budget = tsRequest.GetAttributeValue<Entity>("budget");
-
-
-                EntityCollection associations = tsRequest.GetAttributeValue<EntityCollection>("associations");
-
-                string tsContactId = string.Empty;
-                string contactTypeTo = string.Empty;
-
-                foreach (Entity association in associations.Entities)
-                {
-                    tsContactId = association.GetAttributeValue<string>("tsContactId");
-                    string tsContactType = association.GetAttributeValue<string>("tsContactType");
-
-                    queryFieldMap = new QueryExpression("ts_fieldhierarchyandmapping");
-                    queryFieldMap.ColumnSet = new ColumnSet("ts_value");
-                    queryFieldMap.Criteria.AddCondition("ts_fieldname", ConditionOperator.Equal, "tsContactType");
-                    queryFieldMap.Criteria.AddCondition("ts_valuecode", ConditionOperator.Equal, int.Parse(tsContactType));
-                    fieldMapCollection = service.RetrieveMultiple(queryFieldMap);
-
-                    if (fieldMapCollection.Entities.Count > 0)
-                    {
-                        Entity fieldHierarchy = fieldMapCollection.Entities.First();
-                        contactTypeTo = fieldHierarchy.GetAttributeValue<string>("ts_value");
-                    }
-                }
-
-                string tsOrgIdText = string.Empty;
-                if (tsRequest.Contains("TSOrgId"))
-                    tsOrgIdText = Environment.NewLine + "TSOrgId: " + tsRequest.GetAttributeValue<string>("TSOrgId");
-
-                tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": "
-                    + tsOrgIdText
-                    + Environment.NewLine + "name: " + tsRequest.GetAttributeValue<string>("name")
-                    + Environment.NewLine + "contains orgDesignation: " + tsRequest.Contains("orgDesignation").ToString()
-                    + Environment.NewLine + "orgDesignation: " + tsRequest.GetAttributeValue<string>("orgDesignation")
-                    + Environment.NewLine + "countryCode: " + address.GetAttributeValue<string>("countryCode")
-                    + Environment.NewLine + "regionCode: " + address.GetAttributeValue<string>("regionCode")
-                    + Environment.NewLine + "address1: " + address.GetAttributeValue<string>("address1")
-                    + Environment.NewLine + "city: " + address.GetAttributeValue<string>("city")
-                    + Environment.NewLine + "postalCode: " + address.GetAttributeValue<string>("postalCode")
-                    + Environment.NewLine + "countrydesc: " + countrydesc
-                    + Environment.NewLine + "regionDesc: " + regionDesc
-                    + Environment.NewLine + "legalId: " + legalId
-                    + Environment.NewLine + "email: " + tsRequest.GetAttributeValue<string>("email")
-                    + Environment.NewLine + "phone: " + tsRequest.GetAttributeValue<string>("phone")
-                    + Environment.NewLine + "url: " + tsRequest.GetAttributeValue<string>("url")
-                    + Environment.NewLine + "associationCode: " + tsRequest.GetAttributeValue<string>("associationCode")
-                    + Environment.NewLine + "value: " + budget.GetAttributeValue<string>("value")
-                    + Environment.NewLine + "activityCode: " + tsRequest.GetAttributeValue<string>("activityCode")
-                    + Environment.NewLine + "tsContactId: " + tsContactId
-                    + Environment.NewLine + "contactTypeTo: " + contactTypeTo
-
-                  );
-
-                string[] additionalParams =
-                    {
-                          "TSOrgId",
-                          "address2",
-                          "address3",
-                          "pngoId",
-                          "orgRefId",
-                          "qualificationStatus"
-
-                     };
-
-                foreach (string param in additionalParams)
-                {
-                    if (tsRequest.Contains(param))
-                        tracingService.Trace(
-                            param + ": " + tsRequest.GetAttributeValue<string>(param)
-                            );
-                }
-
-                if (address.Contains("address2"))
-                    tracingService.Trace(
-                            "address2: " + address.GetAttributeValue<string>("address2")
-                            );
-                if (address.Contains("address3"))
-                    tracingService.Trace(
-                            "address3: " + address.GetAttributeValue<string>("address3")
-                            );
-
-                if (tsRequest.Contains("organizationReferences"))
-                {
-                    EntityCollection organizationReferences = tsRequest.GetAttributeValue<EntityCollection>("organizationReferences");
-
-                    tracingService.Trace(
-                        "organizationReferences: "
-                        );
-
-                    foreach (Entity organizationReference in organizationReferences.Entities)
-                    {
-                        tracingService.Trace(
-                        "\t" + "referenceType: " + organizationReference.GetAttributeValue<string>("referenceType") + "; referenceValue: " + organizationReference.GetAttributeValue<string>("referenceValue")
-                        );
-                    }
-                }
-
-                tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
-            }
-            catch (Exception e)
-            {
-
-                tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "Error in printOut(...): "
-                    + Environment.NewLine + e.Message
-                    );
-                tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
-            }
         }
 
         public static Entity updateOrg(Entity tsRequest, string tsOrgId, Entity tsResult
-                                                                                    , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService)
+                                                                                    , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService, IOrganizationServiceFactory serviceFactory)
         {
             Entity postActionAccount = null;
 
@@ -411,16 +143,15 @@ namespace AccountServices
                 if (accountCollection.Entities.Count == 0)
                 {
                     string error = "No organization found for TSOrgId: " + tsOrgId;
-                    tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At updateOrg(...). " + error
-                    );
-                    tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                    AccountServicesHelper.writeToTrace(error
+                                                            , tracingService);
                     errorStack.Add(error);
                     return null;
                 }
 
 
-                tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "updateOrg(...). tsOrgId: " + tsOrgId);
-                tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                AccountServicesHelper.writeToTrace($"updateOrg(). tsOrgId: {tsOrgId}"
+                                                                                        , tracingService);
 
 
                 Entity accountCurrent = accountCollection.Entities.First();
@@ -431,8 +162,7 @@ namespace AccountServices
                 if (tsRequest.Contains("name"))
                     account["name"] = tsRequest.GetAttributeValue<string>("name");
 
-                //account["customertypecode"] = new OptionSetValue(3); //Customer
-
+               
                 if (tsRequest.Contains("sourceId"))
                 {
                     string sourceId = tsRequest.GetAttributeValue<string>("sourceId");
@@ -441,30 +171,8 @@ namespace AccountServices
 
 
 
-                //if (tsRequest.Contains("sourceId") && !string.IsNullOrEmpty(tsRequest.GetAttributeValue<string>("sourceId"))
-                //    )
-                //{
-                //    string sourceId = tsRequest.GetAttributeValue<string>("sourceId");
-                //    if (
-                //        AccountServicesHelper.existsAttributeOptionValue("account", "new_source", int.Parse(sourceId)
-                //        , service, tracingService)
-                //        )
-                //    {
-                //        account["new_source"] = new OptionSetValue(int.Parse(sourceId));
-
-                //    }
-                //    else
-                //    {
-                //        string error = "sourceId " + sourceId + " in the request is not valid. orgUpdate process will continue and disregard this sourceId";
-                //        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At updateOrg(...). " + error
-                //        );
-                //        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
-                //        errorStack.Add(error);
-                //    }
-                //}
-
                 string qualName = "";
-                    string qualCode = "";
+                string qualCode = "";
                 Guid qualCodeId = Guid.Empty;
                 if (tsRequest.Contains("orgDesignation"))
                 {
@@ -490,9 +198,8 @@ namespace AccountServices
                     else
                     {
                         string error = "The orgDesignation is invalid";
-                        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At updateOrg(...). " + error
-                        );
-                        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                        AccountServicesHelper.writeToTrace(error
+                                                                , tracingService);
                         errorStack.Add(error);
                         return null;
                     }
@@ -503,8 +210,6 @@ namespace AccountServices
 
                 if (tsRequest.Contains("address"))
                 {
-
-
                     Entity address = tsRequest.GetAttributeValue<Entity>("address");
 
                     account["address1_country"] = address.GetAttributeValue<string>("countryCode");
@@ -512,9 +217,8 @@ namespace AccountServices
                     if (address.GetAttributeValue<string>("countryCode").ToLower() == "us" && !address.Contains("regionCode"))
                     {
                         string error = "For 'US' countryCode, a regionCode must be provided";
-                        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                        );
-                        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                        AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                         errorStack.Add(error);
                         return null;
                     }
@@ -558,14 +262,9 @@ namespace AccountServices
                         int countryOptionValue = fieldHierarchy.GetAttributeValue<int>("ts_valuecode");
                         account["ts_stateprovdesc"] = new OptionSetValue(countryOptionValue);
                     }
-
-
-
                 }
 
 
-
-                //account["new_platformid"] = org.vchAssignedId;
                 if (tsRequest.Contains("email"))
                     account["emailaddress1"] = tsRequest.GetAttributeValue<string>("email");
 
@@ -606,7 +305,6 @@ namespace AccountServices
 
                     if (entityCollection.Entities.Count > 0)
                         account["new_activitycode"] = new EntityReference("new_activitycodes", entityCollection.Entities.First().Id);
-
                 }
 
 
@@ -624,9 +322,8 @@ namespace AccountServices
                     if (tsPngoId != pngoId)
                     {
                         string error = "The pngoId provided does not match the one on the Org";
-                        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                        );
-                        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                        AccountServicesHelper.writeToTrace(error
+                                                                  , tracingService);
                         errorStack.Add(error);
                         return null;
                     }
@@ -683,9 +380,8 @@ namespace AccountServices
                     if (mappingCollection.Entities.Count == 0)
                     {
                         string error = "The qualificationStatus is invalid";
-                        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At updateOrg(...). " + error
-                        );
-                        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                        AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                         errorStack.Add(error);
                     }
                     else
@@ -712,7 +408,7 @@ namespace AccountServices
 
                             Guid caseId = AccountServicesHelper.createCase(title: qualCode + " - " + qualName
                                                                                 , caseTypeCode: 2
-                                                                                , type: 101996       
+                                                                                , type: 101996
                                                                                 , customerRef: new EntityReference(account.LogicalName, accountId)
                                                                                 , caseStatus: tsCaseStatusCode
                                                                                 , qualCodeId: qualCodeId
@@ -745,7 +441,7 @@ namespace AccountServices
                             string contactTypeTo = fieldHierarchy.GetAttributeValue<string>("ts_value");
 
                             addConnectionToContact(accountId, tsOrgId, tsContactId, "Employer", contactTypeTo
-                                , context, service, tracingService);
+                                                                                                            , context, service, tracingService, serviceFactory);
                         }
                     }
                 }
@@ -778,9 +474,8 @@ namespace AccountServices
                         else
                         {
                             string error = "Invalid referenceType '" + referenceType + "' in organizationReferences";
-                            tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                            );
-                            tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                            AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                             errorStack.Add(error);
                             //return null;
                         }
@@ -807,13 +502,11 @@ namespace AccountServices
 
                             if (refType != 0)
                                 AccountServicesHelper.addAccountReference(tsOrgId, accountId, refType, legalIdentifierType + ":" + legalIdentifierValue
-                                    , service, tracingService);
+                                                                                                                                                    , service, tracingService);
 
                         }
                     }
                 }
-
-
             }
             catch (Exception e)
             {
@@ -821,23 +514,19 @@ namespace AccountServices
                     tsResult.Attributes["duplicateOrg"] = true;
 
 
-                string error = "Error in updateOrg(...). Exception message: "
-                                     + Environment.NewLine + e.Message;
+                string error = $"Error in updateOrg(). Exception message:{Environment.NewLine}{e.Message}"
+                                ;
 
                 AccountServicesHelper.writeToTrace(error
                                                             , tracingService);
 
                 errorStack.Add(error);
-
-
-                
-
             }
 
             return postActionAccount;
         }
         public static Entity createOrg(Entity tsRequest, Entity tsResult
-                                                                    , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService)
+                                                                    , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService, IOrganizationServiceFactory serviceFactory)
         {
             Entity newAccount = null;
             Guid accountId = Guid.Empty;
@@ -882,9 +571,8 @@ namespace AccountServices
                     else
                     {
                         string error = "The orgDesignation is invalid";
-                        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                        );
-                        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                        AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                         errorStack.Add(error);
                         return null;
                     }
@@ -899,9 +587,8 @@ namespace AccountServices
                 if (address.GetAttributeValue<string>("countryCode").ToLower() == "us" && !address.Contains("regionCode"))
                 {
                     string error = "For 'US' countryCode, a regionCode must be provided";
-                    tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                    );
-                    tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                    AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                     errorStack.Add(error);
                     return null;
                 }
@@ -979,9 +666,8 @@ namespace AccountServices
                 else
                 {
                     string error = "No legal identifier provided";
-                    tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                    );
-                    tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                    AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                     errorStack.Add(error);
                     return null;
                 }
@@ -1019,9 +705,8 @@ namespace AccountServices
                     )
                 {
                     string error = "pngoId and orgRefId are mutually required";
-                    tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                    );
-                    tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                    AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                     errorStack.Add(error);
                     return null;
 
@@ -1046,9 +731,8 @@ namespace AccountServices
                         if (PNGOAccountCollection.Entities.Count == 0)
                         {
                             string error = "pngoId is invalid";
-                            tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                            );
-                            tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                            AccountServicesHelper.writeToTrace(error
+                                                                    , tracingService);
                             errorStack.Add(error);
                             return null;
                         }
@@ -1071,9 +755,8 @@ namespace AccountServices
                     else
                     {
                         string error = "numberOfEmployees must a numerical value";
-                        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                        );
-                        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                        AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                         errorStack.Add(error);
                         return null;
                     }
@@ -1091,9 +774,8 @@ namespace AccountServices
                 if (accountId == Guid.Empty)
                 {
                     string error = "No account Id was created";
-                    tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                    );
-                    tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                    AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                     errorStack.Add(error);
                     return null;
                 }
@@ -1117,9 +799,8 @@ namespace AccountServices
                     if (mappingCollection.Entities.Count == 0)
                     {
                         string error = "The qualificationStatus is invalid";
-                        tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                        );
-                        tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                        AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                         errorStack.Add(error);
                         /*Will not do return; will capture and add error to stack, but will not prevent other actions 
                          * (associations, accountReferences) to be performed
@@ -1167,7 +848,7 @@ namespace AccountServices
                             string contactTypeTo = fieldHierarchy.GetAttributeValue<string>("ts_value");
 
                             addConnectionToContact(accountId, tsOrgId, tsContactId, "Employer", contactTypeTo
-                                , context, service, tracingService);
+                                                                                                            , context, service, tracingService, serviceFactory);
                         }
                     }
                 }
@@ -1189,19 +870,18 @@ namespace AccountServices
                         string referenceValue = organizationReference.GetAttributeValue<string>("referenceValue");
 
                         int refType = AccountServicesHelper.getAttributeOptionValue("ts_accountreference", "ts_referencetype", referenceType
-                            , service, tracingService);
+                                                                                                                                        , service, tracingService);
 
                         if (refType != 0)
                         {
                             AccountServicesHelper.addAccountReference(tsOrgId, accountId, refType, referenceValue
-                                , service, tracingService);
+                                                                                                                , service, tracingService);
                         }
                         else
                         {
-                            string error = "Invalid referenceType '" + referenceType + "' in organizationReferences";
-                            tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createOrg(...). " + error
-                            );
-                            tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
+                            string error = $"Invalid referenceType '{referenceType}' in organizationReferences";
+                            AccountServicesHelper.writeToTrace(error
+                                                                 , tracingService);
                             errorStack.Add(error);
                             //return null;
                         }
@@ -1222,13 +902,13 @@ namespace AccountServices
                             string legalIdentifierType = legalIdentifier.GetAttributeValue<string>("type");
                             string legalIdentifierValue = legalIdentifier.GetAttributeValue<string>("identifier");
 
-                            string legalIdentifierOptionLabel = "Legal Identifier " + counter.ToString();
+                            string legalIdentifierOptionLabel = $"Legal Identifier {counter.ToString()}";
                             int refType = AccountServicesHelper.getAttributeOptionValue("ts_accountreference", "ts_referencetype", legalIdentifierOptionLabel
-                                , service, tracingService);
+                                                                                                                                                            , service, tracingService);
 
                             if (refType != 0)
-                                AccountServicesHelper.addAccountReference(tsOrgId, accountId, refType, legalIdentifierType + ":" + legalIdentifierValue
-                                    , service, tracingService);
+                                AccountServicesHelper.addAccountReference(tsOrgId, accountId, refType, $"{legalIdentifierType} : {legalIdentifierValue}"
+                                                                                                                                                    , service, tracingService);
 
                         }
                     }
@@ -1242,20 +922,18 @@ namespace AccountServices
                 if (e.Message.StartsWith("Another account already exists"))
                     tsResult.Attributes["duplicateOrg"] = true;
 
-                string error = "Error in createOrg(...). Exception message: "
-                                    + Environment.NewLine + e.Message;
+                string error = $"Error in createOrg(). Exception message:{Environment.NewLine}{e.Message}"
+                                ;
 
                 AccountServicesHelper.writeToTrace(error
-                                                            , tracingService);
+                                                        , tracingService);
                 errorStack.Add(error);
-
             }
-
             return newAccount;
         }
 
         public static void addConnectionToContact(Guid accountId, string tsOrgId, string tsContactId, string contactTypeFrom, string contactTypeTo
-                                                                                                                                , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService)
+                                                                                                                                , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService, IOrganizationServiceFactory serviceFactory)
         {
             Guid connectionId = Guid.Empty;
 
@@ -1274,6 +952,7 @@ namespace AccountServices
                     contactId = contactCollection.Entities.First().Id;
 
                     QueryExpression queryConnection = new QueryExpression("connection");
+                    queryConnection.ColumnSet = new ColumnSet(true);
                     FilterExpression filterConnection = new FilterExpression(LogicalOperator.And);
                     filterConnection.AddCondition("record1id", ConditionOperator.Equal, accountId);
                     filterConnection.AddCondition("record2id", ConditionOperator.Equal, contactId);
@@ -1290,16 +969,32 @@ namespace AccountServices
                     {
                         connectionEntity = new Entity("connection");
                     }
-
                 }
                 else
                 {
-                    string error = "No contact was found for tsContactId " + tsContactId;
-                    tracingService.Trace(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, pstZone).ToString("yyyy-MM-dd HH:mm:ss") + ": " + "At createConnectionToContact(...). " + error
-                    );
-                    tracingService.Trace(string.Concat(Enumerable.Repeat("-", 100).ToArray()));
-                    errorStack.Add(error);
-                    return;
+                    Guid dynamicsUser = AccountServicesHelper.getUserIdByFullName("# TSDynamicsOnyx"
+                                                                                                    , service, tracingService, errorStack);
+
+                    AccountServicesHelper.writeToTrace($"Impersonating user: # TSDynamicsOnyx: {dynamicsUser.ToString()}"
+                                                                                                                    , tracingService);
+
+
+                    service = serviceFactory.CreateOrganizationService(dynamicsUser);
+                    contactId = AccountServicesHelper.createContact(tsContactId, EnvVariables
+                                                                                            , service, tracingService, errorStack);
+                    service = serviceFactory.CreateOrganizationService(null);
+
+
+                    if (contactId == Guid.Empty)
+                    {
+                        string error = $"No Contact record found for tsContactId: {tsContactId}";
+                        AccountServicesHelper.writeToTrace($"At addConnectionToContact(). {error}"
+                                                                                                , tracingService);
+                        errorStack.Add(error);
+                        return;
+                    }
+
+                    connectionEntity = new Entity("connection");
                 }
 
 
@@ -1315,7 +1010,7 @@ namespace AccountServices
                 else
                 {
                     connectionRoleToId = createConnectionRole(contactTypeFrom
-                                                                , service, tracingService);
+                                                                        , service, tracingService);
                 }
 
 
@@ -1332,7 +1027,7 @@ namespace AccountServices
                 else
                 {
                     connectionRoleFromId = createConnectionRole(contactTypeFrom
-                                                                , service, tracingService);
+                                                                            , service, tracingService);
                 }
 
                 associateConnectionRole(connectionRoleFromId, connectionRoleToId
@@ -1347,6 +1042,13 @@ namespace AccountServices
 
                 if (connectionExists)
                 {
+                    int stateCode = connectionEntity.GetAttributeValue<OptionSetValue>("statecode")?.Value ?? 1;
+                    if (stateCode == 1) //stateCode = 1: inactive
+                    {
+                        connectionEntity["statecode"] = new OptionSetValue(0);
+                        connectionEntity["statuscode"] = new OptionSetValue(1);
+                    }
+
                     service.Update(connectionEntity);
                 }
                 else
@@ -1357,13 +1059,12 @@ namespace AccountServices
             }
             catch (Exception e)
             {
-                string error = "Error in addConnectionToContact(...). Exception message: "
-                                    + Environment.NewLine + e.Message;
+                string error = $"Error in addConnectionToContact(). Exception message:{Environment.NewLine}{e.Message}"
+                                ;
                 AccountServicesHelper.writeToTrace(error
-                                                            , tracingService);
+                                                        , tracingService);
                 errorStack.Add(error);
             }
-
         }
 
         public static Guid createConnectionRole(string name
@@ -1389,10 +1090,10 @@ namespace AccountServices
             }
             catch (Exception e)
             {
-                string error = "Error in createConnectionRole(...). Exception message: "
-                                    + Environment.NewLine + e.Message;
+                string error = $"Error in createConnectionRole(). Exception message:{Environment.NewLine}{e.Message}"
+                                    ;                
                 AccountServicesHelper.writeToTrace(error
-                                                            , tracingService);
+                                                        , tracingService);
                 errorStack.Add(error);
             }
 
@@ -1406,12 +1107,10 @@ namespace AccountServices
             {
                 AssociateRequest associateConnectionRoles = new AssociateRequest
                 {
-                    Target = new EntityReference("connectionrole",
-                         connectionRoleFromId),
+                    Target = new EntityReference("connectionrole", connectionRoleFromId),
                     RelatedEntities = new EntityReferenceCollection()
                         {
-                            new EntityReference("connectionrole",
-                                connectionRoleToId)
+                            new EntityReference("connectionrole", connectionRoleToId)
                         },
                     Relationship = new Relationship()
                     {
@@ -1423,10 +1122,10 @@ namespace AccountServices
             }
             catch (Exception e)
             {
-                string error = "Error in associateConnectionRole(...). Exception message: "
-                                    + Environment.NewLine + e.Message;
+                string error = $"Error in associateConnectionRole(). Exception message:{Environment.NewLine}{e.Message}"
+                                    ;                
                 AccountServicesHelper.writeToTrace(error
-                                                             , tracingService);
+                                                        , tracingService);
                 errorStack.Add(error);
             }
 

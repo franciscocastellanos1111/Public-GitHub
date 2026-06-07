@@ -87,6 +87,9 @@ namespace AccountServices
                     accountTargetEntity = validateAccountCreate(accountTargetEntity
                                                                     , context, service, tracingService);
 
+                    determineAccountOwner(accountTargetEntity
+                                                                    , context, service, tracingService);
+
                 }
                 if (context.MessageName.Equals("Update", StringComparison.OrdinalIgnoreCase))
                 {
@@ -98,10 +101,11 @@ namespace AccountServices
 
                     validateAccountUpdate(accountTargetEntity, account, tsOrgId
                                                 , context, service, tracingService);
+
+                    
                 }
 
             }
-
             catch (Exception e)
             {
                 string errorType = e.GetType().ToString();
@@ -115,7 +119,61 @@ namespace AccountServices
             }
 
         }
+        public static void determineAccountOwner(Entity accountTargetEntity
+                                                        , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService)
+        {
 
+            try
+            {
+                AccountServicesHelper.writeToTrace("determineAccountOwner - starting"
+                                                                                    , tracingService);
+                Entity user = service.Retrieve("systemuser", context.InitiatingUserId, new ColumnSet(true));
+                string fullName = user.GetAttributeValue<string>("fullname");
+
+                AccountServicesHelper.writeToTrace("InitiatingUser: " + fullName
+                                                                                , tracingService);
+
+                string countryCode = accountTargetEntity.Contains("address1_country") ? accountTargetEntity.GetAttributeValue<string>("address1_country") : string.Empty;
+
+                if (string.IsNullOrEmpty(countryCode))
+                {
+                    AccountServicesHelper.writeToTrace("Country not provided, cannot determine Business Unit and Team"
+                                                                                                                , tracingService);
+                    return;
+                }
+
+                dynamic businessUniTeam = null;
+                switch (countryCode.ToLower())
+                {
+                    case "de":
+                        businessUniTeam = AccountServicesHelper.getBusinessUnitAndTeam("TSValidationsDE", service, tracingService);
+                        if (businessUniTeam?.teamId != null)
+                        {
+                            accountTargetEntity["ownerid"] = new EntityReference("team", (Guid)businessUniTeam.teamId);
+                            AccountServicesHelper.writeToTrace("Account owner set to Team: " + "TSValidationsDE"
+                                                                                                        , tracingService);
+                        }
+                        break;
+                    case "au":
+                        businessUniTeam = AccountServicesHelper.getBusinessUnitAndTeam("TSValidationsAU", service, tracingService);
+                        if (businessUniTeam?.teamId != null)
+                        {
+                            accountTargetEntity["ownerid"] = new EntityReference("team", (Guid)businessUniTeam.teamId);
+                            AccountServicesHelper.writeToTrace("Account owner set to Team: " + "TSValidationsAU"
+                                                                                                        , tracingService);
+                        }
+                        break;
+                }
+                
+            }
+            catch (Exception e)
+            {
+                AccountServicesHelper.writeToTrace($"Error in determineAccountOwner. Exception message: {Environment.NewLine}{e.Message}"
+                                                                            , tracingService);
+
+            }
+
+        }
         public static Entity validateAccountCreate(Entity accountTargetEntity
                                                         , IPluginExecutionContext context, IOrganizationService service, ITracingService tracingService)
         {
@@ -155,10 +213,19 @@ namespace AccountServices
                 }
 
 
+                OptionSetValueCollection accountDirectivesCollection = accountTargetEntity.GetAttributeValue<OptionSetValueCollection>("ts_accountdirectives");
+
+                bool bypassPreAccountValidation = accountDirectivesCollection != null && accountDirectivesCollection.Any(option => option.Value == 3); //3 - BypassPreAccountValidation
+
                 if (fullName.Contains("TSDynamics"))
                 {
-                    AccountServicesHelper.writeToTrace("validateAccountUpdate(...) - Bypassing validation, but generating tsOrgId"
+                    AccountServicesHelper.writeToTrace("At validateAccountCreate - TSDynamics - Bypassing validation, but generating tsOrgId"
                                                                                                             , tracingService);
+                }
+                else if (bypassPreAccountValidation && fullName.Contains("SYSTEM"))
+                {
+                    AccountServicesHelper.writeToTrace("At validateAccountCreate - Account directives contain 'BypassPreAccountValidation'. Skipping validateAccountCreate method"
+                                                                                                                                                                                , tracingService);
                 }
                 else
                 {
@@ -303,6 +370,11 @@ namespace AccountServices
 
             try
             {
+
+                //if (fullName.Contains("TSDynamics") || fullName.Contains("TSDynamicsOnyx") || fullName.Contains("DynamicsClient") || fullName.Contains("DynamicsESBIntegration") || fullName.Contains("SYSTEM"))
+                    //return contactTargetEntity;
+
+                //throw new InvalidPluginExecutionException("Creating Contacts in Dynamics is not allowed at this time");
                 //Guid modifiedBy = accountTargetEntity.GetAttributeValue<EntityReference>("createdby");
                 Entity user = service.Retrieve("systemuser", context.InitiatingUserId, new ColumnSet(true));
                 string fullName = user.GetAttributeValue<string>("fullname");
@@ -314,6 +386,24 @@ namespace AccountServices
                 {
                     AccountServicesHelper.writeToTrace("validateAccountUpdate(...) - Bypassing validation"
                                                                                                             , tracingService);
+                    return accountTargetEntity;
+                }
+
+                OptionSetValueCollection accountDirectivesCollection = account.GetAttributeValue<OptionSetValueCollection>("ts_accountdirectives");
+
+                bool bypassPreAccountValidation = accountDirectivesCollection != null && accountDirectivesCollection.Any(option => option.Value == 3); //3 - BypassPreAccountValidation
+
+                if (!bypassPreAccountValidation && accountTargetEntity.Contains("ts_accountdirectives"))
+                {
+                    OptionSetValueCollection accountDirectivesTargetCollection = accountTargetEntity.GetAttributeValue<OptionSetValueCollection>("ts_accountdirectives");
+                    bypassPreAccountValidation = accountDirectivesTargetCollection != null && accountDirectivesTargetCollection.Any(option => option.Value == 3);
+                }
+
+
+                if (bypassPreAccountValidation && fullName.Contains("SYSTEM"))
+                {
+                    AccountServicesHelper.writeToTrace("At validateAccountUpdate - Account directives contain 'BypassPreAccountValidation'. Skipping validateAccountUpdate method"
+                                                                                                                                                                                , tracingService);
                     return accountTargetEntity;
                 }
 

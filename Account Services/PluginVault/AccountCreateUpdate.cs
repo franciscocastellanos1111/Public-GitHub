@@ -92,9 +92,9 @@ namespace AccountServices
                     bool orgDesigChange = processOrgDesignationUpdate(account, tsOrgId
                                                                         , context, service, tracingService);
 
-                    if (!orgDesigChange)
-                        processOrgRevalidation(account
-                                                    , context, service, tracingService);
+                    //if (!orgDesigChange)
+                    //    processOrgRevalidation(account
+                    //                                , context, service, tracingService);
 
                 }
             }

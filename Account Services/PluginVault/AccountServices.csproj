@@ -93,7 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountPreCreateUpdate.cs" />
-    <Compile Include="NotePreOpCreateUpdate.cs" />
+    <Compile Include="NoteCreateUpdate.cs" />
     <Compile Include="NotePreCreateUpdate.cs" />
     <Compile Include="ConnectionPreCreateUpdate.cs" />
     <Compile Include="GetOrgData.cs" />
