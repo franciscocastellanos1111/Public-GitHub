@@ -1,4 +1,4 @@
-# TechSoup Integration & AI Agents — Azure Function App (Python)
+# Systems Integration & AI Agents — Azure Function App (Python)
 
 A multi-domain **Azure Functions** application (Python v2 programming model) that serves as TechSoup's
 integration and automation backbone. It combines three concerns in one deployable app:
@@ -10,8 +10,7 @@ integration and automation backbone. It combines three concerns in one deployabl
 - **Durable & async processing** — queue workers and Durable Functions orchestrations for long-running,
   reliable, checkpoint-safe workflows.
 
-> ⚠️ **Secrets:** This repository is public. All credentials are read from environment variables / Azure Key Vault
-> at runtime. Never commit `local.settings.json`, `*.config`, real client secrets, storage keys, or tenant IDs.
+
 
 ---
 
